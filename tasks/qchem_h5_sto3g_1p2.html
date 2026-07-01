@@ -1,0 +1,1268 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>qchem_h5_sto3g_1p2</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="../index.html">Back to index</a>
+    <span>qchem_h5_sto3g_1p2</span>
+  </header>
+  <main>
+    <h1>qchem_h5_sto3g_1p2</h1>
+    <div class="meta-grid">
+      <div><b>Source</b><br>PennyLane/qchem</div>
+      <div><b>Molecule</b><br>H5</div>
+      <div><b>Basis</b><br>STO-3G</div>
+      <div><b>Bondlength</b><br>1.2</div>
+      <div><b>Qubits</b><br>10</div>
+      <div><b>FCI energy</b><br>-2.5975276436337373</div>
+      <div><b>Benchmark VQE energy</b><br>-2.595219375635945</div>
+    </div>
+    <section>
+      <h2>Task Prompt</h2>
+      <pre class="prompt">This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: H5; basis: STO-3G; geometry/bondlength parameter: 1.2; qubits: 10.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -2.597527643634, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -2.595219375636.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.</pre>
+    </section>
+    <section class='setting'><h2>Reference-Start</h2>
+
+<details class="candidate" open>
+  <summary>Round 0 benchmark/reference circuit</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 0.9797</span>
+  <span>T 0.3140</span>
+  <span>R 0.6238</span>
+  <span>Total 0.6392</span>
+  <span>depth 41</span>
+  <span>params 40</span>
+  <span>size 81</span>
+</div>
+
+
+  
+  <a href='../assets/ref_initial_qchem_h5_sto3g_1p2_r0_3018f8e7c260.png'><img class='circuit' src='../assets/ref_initial_qchem_h5_sto3g_1p2_r0_3018f8e7c260.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+HF_OCCUPIED = [0, 1, 2, 3, 4]
+
+
+def build_ansatz(num_qubits: int):
+    reps = 2
+    theta = ParameterVector(&quot;theta&quot;, length=2 * reps * num_qubits)
+    circuit = QuantumCircuit(num_qubits)
+    for q in HF_OCCUPIED:
+        circuit.x(q)
+    k = 0
+    for layer in range(reps):
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        for q in range(num_qubits - 1):
+            circuit.cx(q, q + 1)
+        if num_qubits &gt; 2:
+            for q in range(num_qubits - 2, -1, -1):
+                circuit.cx(q + 1, q)
+    return circuit, list(theta)</code></pre>
+</details>
+
+<h3>train_only</h3>
+
+<details class="candidate" open>
+  <summary>Round 1</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth 115</span>
+  <span>params 114</span>
+  <span>size 173</span>
+</div>
+<div class='errors'>too many parameters: 114</div>
+
+  
+  <a href='../assets/ref_train_only_qchem_h5_sto3g_1p2_r1_5a6db88cee66.png'><img class='circuit' src='../assets/ref_train_only_qchem_h5_sto3g_1p2_r1_5a6db88cee66.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+HF_OCCUPIED = [0, 1, 2, 3, 4]
+
+
+def build_ansatz(num_qubits: int):
+    # Use 3 repetitions for better expressibility while keeping depth manageable
+    reps = 3
+    # Parameter count: 2 per qubit per rep (RY + RZ) + 1 per CX pair per rep
+    # For num_qubits=10, this gives 2*3*10 + (9+9)*3 = 60 + 54 = 114 parameters
+    theta = ParameterVector(&quot;theta&quot;, length=2 * reps * num_qubits + 2 * (num_qubits - 1) * reps)
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state
+    for q in HF_OCCUPIED:
+        circuit.x(q)
+    
+    k = 0
+    
+    for layer in range(reps):
+        # Single-qubit rotations
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        
+        # Entangling layers with alternating CX patterns for better connectivity
+        # First direction: linear chain
+        for q in range(num_qubits - 1):
+            circuit.cx(q, q + 1)
+            circuit.rz(theta[k], q + 1)  # Add parametrized RZ after CX for better expressibility
+            k += 1
+        
+        # Second direction: reverse linear chain
+        for q in range(num_qubits - 2, -1, -1):
+            circuit.cx(q + 1, q)
+            circuit.rz(theta[k], q)  # Add parametrized RZ after CX
+            k += 1
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 2</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth -</span>
+  <span>params -</span>
+  <span>size -</span>
+</div>
+<div class='errors'>IndexError: list index out of range</div>
+
+  
+  <div class='render-error'>Circuit render failed: IndexError: list index out of range</div>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+HF_OCCUPIED = [0, 1, 2, 3, 4]
+
+
+def build_ansatz(num_qubits: int):
+    # Use 2 repetitions to maintain trainability while improving expressibility
+    reps = 2
+    
+    # Parameter count: 2 per qubit per rep (RY + RZ) + 1 per CX pair per rep
+    # For num_qubits=10, this gives 2*2*10 + 9*2 = 40 + 18 = 58 parameters
+    theta = ParameterVector(&quot;theta&quot;, length=2 * reps * num_qubits + (num_qubits - 1) * reps)
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state
+    for q in HF_OCCUPIED:
+        circuit.x(q)
+    
+    k = 0
+    
+    for layer in range(reps):
+        # Single-qubit rotations
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        
+        # Entangling layer with alternating CX patterns
+        for q in range(num_qubits - 1):
+            circuit.cx(q, q + 1)
+            # Add parametrized RZ on target qubit after CX for better expressibility
+            circuit.rz(theta[k], q + 1)
+            k += 1
+        
+        # Reverse direction entangling layer
+        for q in range(num_qubits - 2, -1, -1):
+            circuit.cx(q + 1, q)
+            # Add parametrized RZ on target qubit after CX
+            circuit.rz(theta[k], q)
+            k += 1
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 3</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth -</span>
+  <span>params -</span>
+  <span>size -</span>
+</div>
+<div class='errors'>IndexError: list index out of range</div>
+
+  
+  <div class='render-error'>Circuit render failed: IndexError: list index out of range</div>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+HF_OCCUPIED = [0, 1, 2, 3, 4]
+
+
+def build_ansatz(num_qubits: int):
+    # Use 2 repetitions to balance expressibility and trainability
+    reps = 2
+    
+    # Parameter count: 2 per qubit per rep (RY + RZ) + 1 per CX pair per rep
+    # For num_qubits=10, this gives 2*2*10 + 9*2 = 40 + 18 = 58 parameters
+    theta = ParameterVector(&quot;theta&quot;, length=2 * reps * num_qubits + (num_qubits - 1) * reps)
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state
+    for q in HF_OCCUPIED:
+        circuit.x(q)
+    
+    k = 0
+    
+    for layer in range(reps):
+        # Single-qubit rotations
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        
+        # Entangling layer with alternating CX patterns
+        for q in range(num_qubits - 1):
+            circuit.cx(q, q + 1)
+            # Add parametrized RZ on target qubit after CX for better expressibility
+            circuit.rz(theta[k], q + 1)
+            k += 1
+        
+        # Reverse direction entangling layer
+        for q in range(num_qubits - 2, -1, -1):
+            circuit.cx(q + 1, q)
+            # Add parametrized RZ on target qubit after CX
+            circuit.rz(theta[k], q)
+            k += 1
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+<h3>reliability_only</h3>
+
+<details class="candidate" open>
+  <summary>Round 1</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth -</span>
+  <span>params -</span>
+  <span>size -</span>
+</div>
+<div class='errors'>IndexError: list index out of range</div>
+
+  
+  <div class='render-error'>Circuit render failed: IndexError: list index out of range</div>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+HF_OCCUPIED = [0, 1, 2, 3, 4]
+
+
+def build_ansatz(num_qubits: int):
+    # Use 3 layers for better expressibility while keeping depth reasonable
+    reps = 3
+    # Reduce parameters per layer to avoid excessive parameter count
+    # Use 2 parameters per qubit per layer (ry + rz) instead of 2*reps*num_qubits
+    theta = ParameterVector(&quot;theta&quot;, length=2 * reps * num_qubits)
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state
+    for q in HF_OCCUPIED:
+        circuit.x(q)
+    
+    k = 0
+    for layer in range(reps):
+        # Single-qubit rotations on all qubits
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        
+        # Entangling layers with alternating CX patterns for better expressibility
+        # First entangling layer: forward chain
+        for q in range(num_qubits - 1):
+            circuit.cx(q, q + 1)
+        
+        # Second entangling layer: backward chain with parameterized CZ (equivalent to CNOT with RZ)
+        # Using RZ on target before and after CNOT to create more expressive entangling
+        for q in range(num_qubits - 1):
+            circuit.rz(theta[k], q + 1)
+            k += 1
+            circuit.cx(q + 1, q)
+            circuit.rz(theta[k], q + 1)
+            k += 1
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 2</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth -</span>
+  <span>params -</span>
+  <span>size -</span>
+</div>
+<div class='errors'>IndexError: list index out of range</div>
+
+  
+  <div class='render-error'>Circuit render failed: IndexError: list index out of range</div>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+HF_OCCUPIED = [0, 1, 2, 3, 4]
+
+
+def build_ansatz(num_qubits: int):
+    # Use 2 layers to balance expressibility and trainability
+    reps = 2
+    # Parameter count: 2 rotations per qubit per layer + 1 parameter for each entangling gate
+    # Entangling gates: (num_qubits-1) per layer * 2 directions = 2*(num_qubits-1) per layer
+    # Total parameters: 2 * reps * num_qubits + reps * 2 * (num_qubits - 1)
+    n_params = 2 * reps * num_qubits + reps * 2 * (num_qubits - 1)
+    theta = ParameterVector(&quot;theta&quot;, length=n_params)
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state
+    for q in HF_OCCUPIED:
+        circuit.x(q)
+    
+    k = 0
+    
+    for layer in range(reps):
+        # Single-qubit rotations
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        
+        # Entangling layer 1: forward chain with parameterized CZ
+        for q in range(num_qubits - 1):
+            circuit.rz(theta[k], q + 1)
+            k += 1
+            circuit.cx(q, q + 1)
+            circuit.rz(theta[k], q + 1)
+            k += 1
+        
+        # Entangling layer 2: backward chain with parameterized CZ
+        for q in range(num_qubits - 1):
+            circuit.rz(theta[k], q)
+            k += 1
+            circuit.cx(q + 1, q)
+            circuit.rz(theta[k], q)
+            k += 1
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 3</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth -</span>
+  <span>params -</span>
+  <span>size -</span>
+</div>
+<div class='errors'>IndexError: list index out of range</div>
+
+  
+  <div class='render-error'>Circuit render failed: IndexError: list index out of range</div>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+HF_OCCUPIED = [0, 1, 2, 3, 4]
+
+
+def build_ansatz(num_qubits: int):
+    # Use 2 layers to balance expressibility and trainability
+    reps = 2
+    # Parameter count: 2 rotations per qubit per layer + 2 parameters per entangling gate
+    # Entangling gates: (num_qubits-1) per layer * 2 directions = 2*(num_qubits-1) per layer
+    # Total parameters: 2 * reps * num_qubits + reps * 2 * (num_qubits - 1)
+    n_params = 2 * reps * num_qubits + reps * 2 * (num_qubits - 1)
+    theta = ParameterVector(&quot;theta&quot;, length=n_params)
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state
+    for q in HF_OCCUPIED:
+        circuit.x(q)
+    
+    k = 0
+    
+    for layer in range(reps):
+        # Single-qubit rotations
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        
+        # Entangling layer 1: forward chain with parameterized CZ
+        for q in range(num_qubits - 1):
+            circuit.rz(theta[k], q + 1)
+            k += 1
+            circuit.cx(q, q + 1)
+            circuit.rz(theta[k], q + 1)
+            k += 1
+        
+        # Entangling layer 2: backward chain with parameterized CZ
+        for q in range(num_qubits - 1):
+            circuit.rz(theta[k], q)
+            k += 1
+            circuit.cx(q + 1, q)
+            circuit.rz(theta[k], q)
+            k += 1
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+<h3>full_scores</h3>
+
+<details class="candidate" open>
+  <summary>Round 1</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth -</span>
+  <span>params -</span>
+  <span>size -</span>
+</div>
+<div class='errors'>IndexError: list index out of range</div>
+
+  
+  <div class='render-error'>Circuit render failed: IndexError: list index out of range</div>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+HF_OCCUPIED = [0, 1, 2, 3, 4]
+
+
+def build_ansatz(num_qubits: int):
+    reps = 3
+    # Use more efficient parameterization: 2 parameters per qubit per layer
+    theta = ParameterVector(&quot;theta&quot;, length=2 * reps * num_qubits)
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state
+    for q in HF_OCCUPIED:
+        circuit.x(q)
+    
+    k = 0
+    for layer in range(reps):
+        # Single-qubit rotations on all qubits
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        
+        # Entangling layers with alternating CX patterns for better expressibility
+        # First entangling layer: forward chain
+        for q in range(num_qubits - 1):
+            circuit.cx(q, q + 1)
+        
+        # Second entangling layer: backward chain with parameterized CZ (equivalent to CNOT with RZ)
+        # Using RZ-entangling pattern for better trainability
+        for q in range(num_qubits - 1):
+            circuit.rz(theta[k], q + 1)
+            k += 1
+            circuit.cx(q + 1, q)
+            circuit.rz(theta[k], q + 1)
+            k += 1
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 2</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 0.9770</span>
+  <span>T 0.3253</span>
+  <span>R 0.6238</span>
+  <span>Total 0.6420</span>
+  <span>depth 41</span>
+  <span>params 40</span>
+  <span>size 81</span>
+</div>
+
+
+  
+  <a href='../assets/ref_full_scores_qchem_h5_sto3g_1p2_r2_ce7fb34ec22e.png'><img class='circuit' src='../assets/ref_full_scores_qchem_h5_sto3g_1p2_r2_ce7fb34ec22e.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+HF_OCCUPIED = [0, 1, 2, 3, 4]
+
+
+def build_ansatz(num_qubits: int):
+    reps = 2
+    # Use 3 parameters per qubit per layer for better expressibility while keeping trainability
+    theta = ParameterVector(&quot;theta&quot;, length=3 * reps * num_qubits)
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state
+    for q in HF_OCCUPIED:
+        circuit.x(q)
+    
+    k = 0
+    for layer in range(reps):
+        # Single-qubit rotations: Ry followed by Rz for expressibility
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        
+        # Entangling layer with alternating CX pattern
+        for q in range(num_qubits - 1):
+            circuit.cx(q, q + 1)
+        
+        # Second entangling layer with reversed pattern
+        if num_qubits &gt; 2:
+            for q in range(num_qubits - 2, -1, -1):
+                circuit.cx(q + 1, q)
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 3</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 0.9736</span>
+  <span>T 0.4114</span>
+  <span>R 0.7475</span>
+  <span>Total 0.7108</span>
+  <span>depth 9</span>
+  <span>params 40</span>
+  <span>size 63</span>
+</div>
+
+
+  
+  <a href='../assets/ref_full_scores_qchem_h5_sto3g_1p2_r3_d92f64d052eb.png'><img class='circuit' src='../assets/ref_full_scores_qchem_h5_sto3g_1p2_r3_d92f64d052eb.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+HF_OCCUPIED = [0, 1, 2, 3, 4]
+
+
+def build_ansatz(num_qubits: int):
+    reps = 2
+    # Use 3 parameters per qubit per layer for expressibility, but reduce entangling gates for reliability
+    theta = ParameterVector(&quot;theta&quot;, length=3 * reps * num_qubits)
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state
+    for q in HF_OCCUPIED:
+        circuit.x(q)
+    
+    k = 0
+    for layer in range(reps):
+        # Single-qubit rotations: Ry followed by Rz for expressibility
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        
+        # Entangling layer with alternating CX pattern - reduced depth for reliability
+        for q in range(0, num_qubits - 1, 2):
+            circuit.cx(q, q + 1)
+        for q in range(1, num_qubits - 1, 2):
+            circuit.cx(q, q + 1)
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+</section>
+    <section class='setting'><h2>From-Scratch</h2>
+
+<details class="candidate" open>
+  <summary>Round 0 Qwen initial from task only</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth -</span>
+  <span>params -</span>
+  <span>size -</span>
+</div>
+<div class='errors'>AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split0_qwen_initial/prompts/qchem_h5_sto3g_1p2_initial.txt</div>
+  <div class='render-error'>Circuit render failed: AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H5 molecule in STO-3G basis with 10 qubits
+    # Using a hardware-efficient ansatz inspired by the benchmark
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for rotation gates
+    theta = ParameterVector(&#x27;theta&#x27;, length=num_qubits)
+    phi = ParameterVector(&#x27;phi&#x27;, length=num_qubits)
+    lam = ParameterVector(&#x27;lambda&#x27;, length=num_qubits)
+    
+    # Apply U3 gates to initialize with rotations
+    for i in range(num_qubits):
+        qc.u3(theta[i], phi[i], lam[i], i)
+    
+    # Add entangling layers with CZ gates and additional rotation parameters
+    for layer in range(2):
+        # Add more rotation parameters for deeper layers
+        theta_l = ParameterVector(f&#x27;theta_l{layer}&#x27;, length=num_qubits)
+        phi_l = ParameterVector(f&#x27;phi_l{layer}&#x27;, length=num_qubits)
+        lam_l = ParameterVector(f&#x27;lambda_l{layer}&#x27;, length=num_qubits)
+        
+        for i in range(num_qubits):
+            qc.u3(theta_l[i], phi_l[i], lam_l[i], i)
+        
+        # Add entanglement in a chain-like fashion
+        for i in range(num_qubits - 1):
+            qc.cz(i, i + 1)
+    
+    # Collect all parameters
+    params = list(theta) + list(phi) + list(lam)
+    for layer in range(2):
+        theta_l = ParameterVector(f&#x27;theta_l{layer}&#x27;, length=num_qubits)
+        phi_l = ParameterVector(f&#x27;phi_l{layer}&#x27;, length=num_qubits)
+        lam_l = ParameterVector(f&#x27;lambda_l{layer}&#x27;, length=num_qubits)
+        params.extend(list(theta_l) + list(phi_l) + list(lam_l))
+    
+    return qc, params</code></pre>
+</details>
+
+<h3>train_only</h3>
+
+<details class="candidate" open>
+  <summary>Round 1</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth -</span>
+  <span>params -</span>
+  <span>size -</span>
+</div>
+<div class='errors'>AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split0_qwen_feedback/train_only/prompts/qchem_h5_sto3g_1p2_round1.txt</div>
+  <div class='render-error'>Circuit render failed: AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import Parameter
+
+def build_ansatz(num_qubits):
+    # H5 molecule in STO-3G basis with 10 qubits
+    # Using a hardware-efficient ansatz with U3 and CZ gates
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for rotation gates
+    params = []
+    
+    # First layer: single-qubit rotations
+    for i in range(num_qubits):
+        theta = Parameter(f&#x27;theta_{i}&#x27;)
+        phi = Parameter(f&#x27;phi_{i}&#x27;)
+        lam = Parameter(f&#x27;lam_{i}&#x27;)
+        params.extend([theta, phi, lam])
+        qc.u3(theta, phi, lam, i)
+    
+    # Entangling layer: CZ gates in a chain
+    for i in range(num_qubits - 1):
+        qc.cz(i, i + 1)
+    
+    # Second layer: single-qubit rotations
+    for i in range(num_qubits):
+        theta = Parameter(f&#x27;theta2_{i}&#x27;)
+        phi = Parameter(f&#x27;phi2_{i}&#x27;)
+        lam = Parameter(f&#x27;lam2_{i}&#x27;)
+        params.extend([theta, phi, lam])
+        qc.u3(theta, phi, lam, i)
+    
+    # Add more entangling layers for better expressibility
+    for layer in range(2):
+        for i in range(num_qubits - 1):
+            qc.cz(i, i + 1)
+        for i in range(num_qubits):
+            theta = Parameter(f&#x27;theta{layer+3}_{i}&#x27;)
+            phi = Parameter(f&#x27;phi{layer+3}_{i}&#x27;)
+            lam = Parameter(f&#x27;lam{layer+3}_{i}&#x27;)
+            params.extend([theta, phi, lam])
+            qc.u3(theta, phi, lam, i)
+    
+    return qc, params</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 2</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth -</span>
+  <span>params -</span>
+  <span>size -</span>
+</div>
+<div class='errors'>AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split0_qwen_feedback/train_only/prompts/qchem_h5_sto3g_1p2_round2.txt</div>
+  <div class='render-error'>Circuit render failed: AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import Parameter
+
+def build_ansatz(num_qubits):
+    # H5 molecule in STO-3G basis with 10 qubits
+    # Using a hardware-efficient ansatz with U3 and CX gates
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for rotation gates
+    params = []
+    
+    # First layer: single-qubit rotations
+    for i in range(num_qubits):
+        theta = Parameter(f&#x27;theta_{i}&#x27;)
+        phi = Parameter(f&#x27;phi_{i}&#x27;)
+        lam = Parameter(f&#x27;lam_{i}&#x27;)
+        params.extend([theta, phi, lam])
+        qc.u3(theta, phi, lam, i)
+    
+    # Entangling layer: CX gates in a chain (more reliable than CZ)
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+    
+    # Second layer: single-qubit rotations
+    for i in range(num_qubits):
+        theta = Parameter(f&#x27;theta2_{i}&#x27;)
+        phi = Parameter(f&#x27;phi2_{i}&#x27;)
+        lam = Parameter(f&#x27;lam2_{i}&#x27;)
+        params.extend([theta, phi, lam])
+        qc.u3(theta, phi, lam, i)
+    
+    # Third layer: entangling with alternating CX pattern for better connectivity
+    for i in range(0, num_qubits - 1, 2):
+        qc.cx(i, i + 1)
+    for i in range(1, num_qubits - 1, 2):
+        qc.cx(i, i + 1)
+    
+    # Fourth layer: single-qubit rotations
+    for i in range(num_qubits):
+        theta = Parameter(f&#x27;theta3_{i}&#x27;)
+        phi = Parameter(f&#x27;phi3_{i}&#x27;)
+        lam = Parameter(f&#x27;lam3_{i}&#x27;)
+        params.extend([theta, phi, lam])
+        qc.u3(theta, phi, lam, i)
+    
+    return qc, params</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 3</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth -</span>
+  <span>params -</span>
+  <span>size -</span>
+</div>
+<div class='errors'>AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split0_qwen_feedback/train_only/prompts/qchem_h5_sto3g_1p2_round3.txt</div>
+  <div class='render-error'>Circuit render failed: AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import Parameter
+
+def build_ansatz(num_qubits):
+    # H5 molecule in STO-3G basis with 10 qubits
+    # Using a hardware-efficient ansatz with U3 and CX gates
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for rotation gates
+    params = []
+    
+    # First layer: single-qubit rotations
+    for i in range(num_qubits):
+        theta = Parameter(f&#x27;theta_{i}&#x27;)
+        phi = Parameter(f&#x27;phi_{i}&#x27;)
+        lam = Parameter(f&#x27;lam_{i}&#x27;)
+        params.extend([theta, phi, lam])
+        qc.u3(theta, phi, lam, i)
+    
+    # Entangling layer: CX gates in a chain
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+    
+    # Second layer: single-qubit rotations
+    for i in range(num_qubits):
+        theta = Parameter(f&#x27;theta2_{i}&#x27;)
+        phi = Parameter(f&#x27;phi2_{i}&#x27;)
+        lam = Parameter(f&#x27;lam2_{i}&#x27;)
+        params.extend([theta, phi, lam])
+        qc.u3(theta, phi, lam, i)
+    
+    # Third layer: entangling with alternating CX pattern
+    for i in range(0, num_qubits - 1, 2):
+        qc.cx(i, i + 1)
+    for i in range(1, num_qubits - 1, 2):
+        qc.cx(i, i + 1)
+    
+    # Fourth layer: single-qubit rotations
+    for i in range(num_qubits):
+        theta = Parameter(f&#x27;theta3_{i}&#x27;)
+        phi = Parameter(f&#x27;phi3_{i}&#x27;)
+        lam = Parameter(f&#x27;lam3_{i}&#x27;)
+        params.extend([theta, phi, lam])
+        qc.u3(theta, phi, lam, i)
+    
+    return qc, params</code></pre>
+</details>
+
+<h3>reliability_only</h3>
+
+<details class="candidate" open>
+  <summary>Round 1</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth -</span>
+  <span>params -</span>
+  <span>size -</span>
+</div>
+<div class='errors'>AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split0_qwen_feedback/reliability_only/prompts/qchem_h5_sto3g_1p2_round1.txt</div>
+  <div class='render-error'>Circuit render failed: AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import Parameter
+
+def build_ansatz(num_qubits):
+    # H5 molecule in STO-3G basis with 10 qubits
+    # Using a hardware-efficient ansatz with U3 and CX gates
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for rotation gates
+    params = []
+    
+    # First layer: single-qubit rotations
+    for i in range(num_qubits):
+        theta = Parameter(f&#x27;theta_{i}&#x27;)
+        phi = Parameter(f&#x27;phi_{i}&#x27;)
+        lam = Parameter(f&#x27;lam_{i}&#x27;)
+        params.extend([theta, phi, lam])
+        qc.u3(theta, phi, lam, i)
+    
+    # Entangling layer: CX gates in a chain
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+    
+    # Second layer: single-qubit rotations
+    for i in range(num_qubits):
+        theta = Parameter(f&#x27;theta2_{i}&#x27;)
+        phi = Parameter(f&#x27;phi2_{i}&#x27;)
+        lam = Parameter(f&#x27;lam2_{i}&#x27;)
+        params.extend([theta, phi, lam])
+        qc.u3(theta, phi, lam, i)
+    
+    # Add some additional entanglement with alternating CX pattern
+    for i in range(0, num_qubits - 1, 2):
+        qc.cx(i + 1, i)
+    
+    # Third layer: single-qubit rotations
+    for i in range(num_qubits):
+        theta = Parameter(f&#x27;theta3_{i}&#x27;)
+        phi = Parameter(f&#x27;phi3_{i}&#x27;)
+        lam = Parameter(f&#x27;lam3_{i}&#x27;)
+        params.extend([theta, phi, lam])
+        qc.u3(theta, phi, lam, i)
+    
+    return qc, params</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 2</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth -</span>
+  <span>params -</span>
+  <span>size -</span>
+</div>
+<div class='errors'>AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split0_qwen_feedback/reliability_only/prompts/qchem_h5_sto3g_1p2_round2.txt</div>
+  <div class='render-error'>Circuit render failed: AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import Parameter
+
+def build_ansatz(num_qubits):
+    # H5 molecule in STO-3G basis with 10 qubits
+    # Using a hardware-efficient ansatz with U3 and CX gates
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for rotation gates
+    params = []
+    
+    # First layer: single-qubit rotations
+    for i in range(num_qubits):
+        theta = Parameter(f&#x27;theta_{i}&#x27;)
+        phi = Parameter(f&#x27;phi_{i}&#x27;)
+        lam = Parameter(f&#x27;lam_{i}&#x27;)
+        params.extend([theta, phi, lam])
+        qc.u3(theta, phi, lam, i)
+    
+    # Entangling layer: CX gates in a chain
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+    
+    # Second layer: single-qubit rotations
+    for i in range(num_qubits):
+        theta = Parameter(f&#x27;theta2_{i}&#x27;)
+        phi = Parameter(f&#x27;phi2_{i}&#x27;)
+        lam = Parameter(f&#x27;lam2_{i}&#x27;)
+        params.extend([theta, phi, lam])
+        qc.u3(theta, phi, lam, i)
+    
+    # Add some additional entanglement with alternating CX pattern
+    for i in range(0, num_qubits - 1, 2):
+        qc.cx(i + 1, i)
+    
+    # Third layer: single-qubit rotations
+    for i in range(num_qubits):
+        theta = Parameter(f&#x27;theta3_{i}&#x27;)
+        phi = Parameter(f&#x27;phi3_{i}&#x27;)
+        lam = Parameter(f&#x27;lam3_{i}&#x27;)
+        params.extend([theta, phi, lam])
+        qc.u3(theta, phi, lam, i)
+    
+    return qc, params</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 3</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth -</span>
+  <span>params -</span>
+  <span>size -</span>
+</div>
+<div class='errors'>AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split0_qwen_feedback/reliability_only/prompts/qchem_h5_sto3g_1p2_round3.txt</div>
+  <div class='render-error'>Circuit render failed: AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import Parameter
+
+def build_ansatz(num_qubits):
+    # H5 molecule in STO-3G basis with 10 qubits
+    # Using a hardware-efficient ansatz with U3 and CX gates
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for rotation gates
+    params = []
+    
+    # First layer: single-qubit rotations
+    for i in range(num_qubits):
+        theta = Parameter(f&#x27;theta_{i}&#x27;)
+        phi = Parameter(f&#x27;phi_{i}&#x27;)
+        lam = Parameter(f&#x27;lam_{i}&#x27;)
+        params.extend([theta, phi, lam])
+        qc.u3(theta, phi, lam, i)
+    
+    # Entangling layer: CX gates in a chain
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+    
+    # Second layer: single-qubit rotations
+    for i in range(num_qubits):
+        theta = Parameter(f&#x27;theta2_{i}&#x27;)
+        phi = Parameter(f&#x27;phi2_{i}&#x27;)
+        lam = Parameter(f&#x27;lam2_{i}&#x27;)
+        params.extend([theta, phi, lam])
+        qc.u3(theta, phi, lam, i)
+    
+    # Add some additional entanglement with alternating CX pattern
+    for i in range(0, num_qubits - 1, 2):
+        qc.cx(i + 1, i)
+    
+    # Third layer: single-qubit rotations
+    for i in range(num_qubits):
+        theta = Parameter(f&#x27;theta3_{i}&#x27;)
+        phi = Parameter(f&#x27;phi3_{i}&#x27;)
+        lam = Parameter(f&#x27;lam3_{i}&#x27;)
+        params.extend([theta, phi, lam])
+        qc.u3(theta, phi, lam, i)
+    
+    return qc, params</code></pre>
+</details>
+
+<h3>full_scores</h3>
+
+<details class="candidate" open>
+  <summary>Round 1</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth -</span>
+  <span>params -</span>
+  <span>size -</span>
+</div>
+<div class='errors'>AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split0_qwen_feedback/full_scores/prompts/qchem_h5_sto3g_1p2_round1.txt</div>
+  <div class='render-error'>Circuit render failed: AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H5 molecule in STO-3G basis with 10 qubits
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for single-qubit rotations
+    theta = ParameterVector(&#x27;theta&#x27;, length=num_qubits)
+    phi = ParameterVector(&#x27;phi&#x27;, length=num_qubits)
+    lam = ParameterVector(&#x27;lambda&#x27;, length=num_qubits)
+    
+    # Apply U3 gates for initial single-qubit rotations
+    for i in range(num_qubits):
+        qc.u3(theta[i], phi[i], lam[i], i)
+    
+    # Add entangling layer with CZ gates
+    for i in range(num_qubits - 1):
+        qc.cz(i, i + 1)
+    
+    # Second rotation layer with additional parameters
+    theta2 = ParameterVector(&#x27;theta2&#x27;, length=num_qubits)
+    phi2 = ParameterVector(&#x27;phi2&#x27;, length=num_qubits)
+    lam2 = ParameterVector(&#x27;lambda2&#x27;, length=num_qubits)
+    
+    for i in range(num_qubits):
+        qc.u3(theta2[i], phi2[i], lam2[i], i)
+    
+    # Collect all parameters
+    params = list(theta) + list(phi) + list(lam) + list(theta2) + list(phi2) + list(lam2)
+    
+    return qc, params</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 2</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth -</span>
+  <span>params -</span>
+  <span>size -</span>
+</div>
+<div class='errors'>AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split0_qwen_feedback/full_scores/prompts/qchem_h5_sto3g_1p2_round2.txt</div>
+  <div class='render-error'>Circuit render failed: AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H5 molecule in STO-3G basis with 10 qubits
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for single-qubit rotations
+    theta = ParameterVector(&#x27;theta&#x27;, length=num_qubits)
+    phi = ParameterVector(&#x27;phi&#x27;, length=num_qubits)
+    lam = ParameterVector(&#x27;lambda&#x27;, length=num_qubits)
+    
+    # Apply U3 gates for initial single-qubit rotations
+    for i in range(num_qubits):
+        qc.u3(theta[i], phi[i], lam[i], i)
+    
+    # Add entangling layer with CZ gates
+    for i in range(num_qubits - 1):
+        qc.cz(i, i + 1)
+    
+    # Second rotation layer with additional parameters
+    theta2 = ParameterVector(&#x27;theta2&#x27;, length=num_qubits)
+    phi2 = ParameterVector(&#x27;phi2&#x27;, length=num_qubits)
+    lam2 = ParameterVector(&#x27;lambda2&#x27;, length=num_qubits)
+    
+    for i in range(num_qubits):
+        qc.u3(theta2[i], phi2[i], lam2[i], i)
+    
+    # Collect all parameters
+    params = list(theta) + list(phi) + list(lam) + list(theta2) + list(phi2) + list(lam2)
+    
+    return qc, params</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 3</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth -</span>
+  <span>params -</span>
+  <span>size -</span>
+</div>
+<div class='errors'>AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split0_qwen_feedback/full_scores/prompts/qchem_h5_sto3g_1p2_round3.txt</div>
+  <div class='render-error'>Circuit render failed: AttributeError: &#x27;QuantumCircuit&#x27; object has no attribute &#x27;u3&#x27;</div>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H5 molecule in STO-3G basis with 10 qubits
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for single-qubit rotations
+    theta = ParameterVector(&#x27;theta&#x27;, length=num_qubits)
+    phi = ParameterVector(&#x27;phi&#x27;, length=num_qubits)
+    lam = ParameterVector(&#x27;lambda&#x27;, length=num_qubits)
+    
+    # Apply U3 gates for initial single-qubit rotations
+    for i in range(num_qubits):
+        qc.u3(theta[i], phi[i], lam[i], i)
+    
+    # Add entangling layer with CZ gates
+    for i in range(num_qubits - 1):
+        qc.cz(i, i + 1)
+    
+    # Second rotation layer with additional parameters
+    theta2 = ParameterVector(&#x27;theta2&#x27;, length=num_qubits)
+    phi2 = ParameterVector(&#x27;phi2&#x27;, length=num_qubits)
+    lam2 = ParameterVector(&#x27;lambda2&#x27;, length=num_qubits)
+    
+    for i in range(num_qubits):
+        qc.u3(theta2[i], phi2[i], lam2[i], i)
+    
+    # Collect all parameters
+    params = list(theta) + list(phi) + list(lam) + list(theta2) + list(phi2) + list(lam2)
+    
+    return qc, params</code></pre>
+</details>
+
+</section>
+  </main>
+</body>
+</html>

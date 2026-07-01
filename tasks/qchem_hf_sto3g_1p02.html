@@ -1,0 +1,1442 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>qchem_hf_sto3g_1p02</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="../index.html">Back to index</a>
+    <span>qchem_hf_sto3g_1p02</span>
+  </header>
+  <main>
+    <h1>qchem_hf_sto3g_1p02</h1>
+    <div class="meta-grid">
+      <div><b>Source</b><br>PennyLane/qchem</div>
+      <div><b>Molecule</b><br>HF</div>
+      <div><b>Basis</b><br>STO-3G</div>
+      <div><b>Bondlength</b><br>1.02</div>
+      <div><b>Qubits</b><br>12</div>
+      <div><b>FCI energy</b><br>-98.60273327939717</div>
+      <div><b>Benchmark VQE energy</b><br>-98.60183273245636</div>
+    </div>
+    <section>
+      <h2>Task Prompt</h2>
+      <pre class="prompt">This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: HF; basis: STO-3G; geometry/bondlength parameter: 1.02; qubits: 12.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -98.602733279397, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -98.601832732456.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.</pre>
+    </section>
+    <section class='setting'><h2>Reference-Start</h2>
+
+<details class="candidate" open>
+  <summary>Round 0 benchmark/reference circuit</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 0.9965</span>
+  <span>T 1.0000</span>
+  <span>R 0.5586</span>
+  <span>Total 0.8517</span>
+  <span>depth 49</span>
+  <span>params 48</span>
+  <span>size 102</span>
+</div>
+
+
+  
+  <a href='../assets/ref_initial_qchem_hf_sto3g_1p02_r0_bfe287dc6abf.png'><img class='circuit' src='../assets/ref_initial_qchem_hf_sto3g_1p02_r0_bfe287dc6abf.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+HF_OCCUPIED = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+
+def build_ansatz(num_qubits: int):
+    reps = 2
+    theta = ParameterVector(&quot;theta&quot;, length=2 * reps * num_qubits)
+    circuit = QuantumCircuit(num_qubits)
+    for q in HF_OCCUPIED:
+        circuit.x(q)
+    k = 0
+    for layer in range(reps):
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        for q in range(num_qubits - 1):
+            circuit.cx(q, q + 1)
+        if num_qubits &gt; 2:
+            for q in range(num_qubits - 2, -1, -1):
+                circuit.cx(q + 1, q)
+    return circuit, list(theta)</code></pre>
+</details>
+
+<h3>train_only</h3>
+
+<details class="candidate" open>
+  <summary>Round 1</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth -</span>
+  <span>params -</span>
+  <span>size -</span>
+</div>
+<div class='errors'>IndexError: list index out of range</div>
+
+  
+  <div class='render-error'>Circuit render failed: IndexError: list index out of range</div>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+def build_ansatz(num_qubits: int):
+    # Use 2 layers with entangling blocks and single-qubit rotations
+    # This ansatz preserves the HF occupation pattern implicitly through the Hamiltonian
+    # and focuses on excitation patterns relevant for molecular systems
+    
+    reps = 2
+    # Parameter count: 2 rotations per qubit per layer + 1 rotation per qubit for initialization
+    # Total parameters: 2 * reps * num_qubits + num_qubits = 3 * num_qubits
+    theta = ParameterVector(&quot;theta&quot;, length=3 * num_qubits)
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Initialize with Hartree-Fock state (first 10 qubits occupied for HF in STO-3G)
+    # For generalization, we&#x27;ll use the standard pattern: first num_qubits//2 orbitals occupied
+    # But since the benchmark uses 12 qubits and HF has 10 electrons (5 orbitals, 10 qubits occupied),
+    # we follow the original pattern: occupy first 10 qubits
+    hf_occupied = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    for q in hf_occupied:
+        circuit.x(q)
+    
+    k = 0
+    
+    # Add initial single-qubit rotation layer
+    for q in range(num_qubits):
+        circuit.ry(theta[k], q)
+        k += 1
+    
+    for layer in range(reps):
+        # Entangling block with alternating CZ or CNOT pattern for better expressibility
+        for i in range(0, num_qubits - 1, 2):
+            circuit.cx(i, i + 1)
+        for i in range(1, num_qubits - 1, 2):
+            circuit.cx(i, i + 1)
+        
+        # Single-qubit rotation layers with Z and Y rotations for universality
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 2</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth -</span>
+  <span>params -</span>
+  <span>size -</span>
+</div>
+<div class='errors'>IndexError: list index out of range</div>
+
+  
+  <div class='render-error'>Circuit render failed: IndexError: list index out of range</div>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+def build_ansatz(num_qubits: int):
+    # Use 2 layers with entangling blocks and single-qubit rotations
+    # This ansatz preserves the HF occupation pattern implicitly through the Hamiltonian
+    # and focuses on excitation patterns relevant for molecular systems
+    
+    reps = 2
+    # Parameter count: 2 rotations per qubit per layer + 1 rotation per qubit for initialization
+    # Total parameters: 2 * reps * num_qubits + num_qubits = 3 * num_qubits
+    theta = ParameterVector(&quot;theta&quot;, length=3 * num_qubits)
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Initialize with Hartree-Fock state (first 10 qubits occupied for HF in STO-3G)
+    # For generalization, we&#x27;ll use the standard pattern: first num_qubits//2 orbitals occupied
+    # But since the benchmark uses 12 qubits and HF has 10 electrons (5 orbitals, 10 qubits occupied),
+    # we follow the original pattern: occupy first 10 qubits
+    hf_occupied = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    for q in hf_occupied:
+        circuit.x(q)
+    
+    k = 0
+    
+    # Add initial single-qubit rotation layer
+    for q in range(num_qubits):
+        circuit.ry(theta[k], q)
+        k += 1
+    
+    for layer in range(reps):
+        # Entangling block with alternating CZ or CNOT pattern for better expressibility
+        for i in range(0, num_qubits - 1, 2):
+            circuit.cx(i, i + 1)
+        for i in range(1, num_qubits - 1, 2):
+            circuit.cx(i, i + 1)
+        
+        # Single-qubit rotation layers with Z and Y rotations for universality
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 3</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth -</span>
+  <span>params -</span>
+  <span>size -</span>
+</div>
+<div class='errors'>IndexError: list index out of range</div>
+
+  
+  <div class='render-error'>Circuit render failed: IndexError: list index out of range</div>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+def build_ansatz(num_qubits: int):
+    # Use 2 layers with entangling blocks and single-qubit rotations
+    # This ansatz preserves the HF occupation pattern implicitly through the Hamiltonian
+    # and focuses on excitation patterns relevant for molecular systems
+    
+    reps = 2
+    # Parameter count: 2 rotations per qubit per layer + 1 rotation per qubit for initialization
+    # Total parameters: 2 * reps * num_qubits + num_qubits = 3 * num_qubits
+    theta = ParameterVector(&quot;theta&quot;, length=3 * num_qubits)
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Initialize with Hartree-Fock state (first 10 qubits occupied for HF in STO-3G)
+    hf_occupied = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    for q in hf_occupied:
+        circuit.x(q)
+    
+    k = 0
+    
+    # Add initial single-qubit rotation layer
+    for q in range(num_qubits):
+        circuit.ry(theta[k], q)
+        k += 1
+    
+    for layer in range(reps):
+        # Entangling block with alternating CZ or CNOT pattern for better expressibility
+        for i in range(0, num_qubits - 1, 2):
+            circuit.cx(i, i + 1)
+        for i in range(1, num_qubits - 1, 2):
+            circuit.cx(i, i + 1)
+        
+        # Single-qubit rotation layers with Z and Y rotations for universality
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+<h3>reliability_only</h3>
+
+<details class="candidate" open>
+  <summary>Round 1</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 1.0000</span>
+  <span>T 0.8333</span>
+  <span>R 0.6969</span>
+  <span>Total 0.8434</span>
+  <span>depth 27</span>
+  <span>params 48</span>
+  <span>size 80</span>
+</div>
+
+
+  
+  <a href='../assets/ref_reliability_only_qchem_hf_sto3g_1p02_r1_0e604a5bff08.png'><img class='circuit' src='../assets/ref_reliability_only_qchem_hf_sto3g_1p02_r1_0e604a5bff08.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+def build_ansatz(num_qubits: int):
+    # Use 2 layers with entangling blocks and single-qubit rotations
+    # Focus on expressibility and trainability while maintaining correctness
+    reps = 2
+    # Parameter count: 2 rotations per qubit per layer * 2 layers = 48 parameters
+    theta = ParameterVector(&quot;theta&quot;, length=2 * num_qubits * reps)
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Initialize with Hartree-Fock state (occupied orbitals 0-9 for HF/STO-3G)
+    hf_states = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    for q in hf_states:
+        circuit.x(q)
+    
+    k = 0
+    for layer in range(reps):
+        # Add expressive single-qubit rotation layers
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        
+        # Use alternating entangling pattern for better expressibility
+        # Even layer: forward CX chain
+        if layer % 2 == 0:
+            for q in range(num_qubits - 1):
+                circuit.cx(q, q + 1)
+        # Odd layer: backward CX chain
+        else:
+            for q in range(num_qubits - 1, 0, -1):
+                circuit.cx(q, q - 1)
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 2</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 1.0000</span>
+  <span>T 0.8404</span>
+  <span>R 0.6180</span>
+  <span>Total 0.8195</span>
+  <span>depth 29</span>
+  <span>params 72</span>
+  <span>size 104</span>
+</div>
+
+
+  
+  <a href='../assets/ref_reliability_only_qchem_hf_sto3g_1p02_r2_21501874380e.png'><img class='circuit' src='../assets/ref_reliability_only_qchem_hf_sto3g_1p02_r2_21501874380e.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+def build_ansatz(num_qubits: int):
+    # Use 2 layers with improved entangling pattern and single-qubit rotations
+    # Optimize for expressibility (E), trainability (T), and reliability (R)
+    reps = 2
+    # Parameter count: 3 rotations per qubit per layer * 2 layers = 72 parameters
+    theta = ParameterVector(&quot;theta&quot;, length=3 * num_qubits * reps)
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Initialize with Hartree-Fock state (occupied orbitals 0-9 for HF/STO-3G)
+    hf_states = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    for q in hf_states:
+        circuit.x(q)
+    
+    k = 0
+    for layer in range(reps):
+        # Add expressive single-qubit rotation layers with Y and Z rotations
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        # Add additional X rotation for improved expressibility
+        for q in range(num_qubits):
+            circuit.rx(theta[k], q)
+            k += 1
+        
+        # Use alternating entangling pattern with optimized connectivity
+        # Even layer: forward CX chain
+        if layer % 2 == 0:
+            for q in range(num_qubits - 1):
+                circuit.cx(q, q + 1)
+        # Odd layer: backward CX chain
+        else:
+            for q in range(num_qubits - 1, 0, -1):
+                circuit.cx(q, q - 1)
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 3</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 1.0000</span>
+  <span>T 0.9304</span>
+  <span>R 0.6969</span>
+  <span>Total 0.8758</span>
+  <span>depth 27</span>
+  <span>params 48</span>
+  <span>size 80</span>
+</div>
+
+
+  
+  <a href='../assets/ref_reliability_only_qchem_hf_sto3g_1p02_r3_23fe30da94e6.png'><img class='circuit' src='../assets/ref_reliability_only_qchem_hf_sto3g_1p02_r3_23fe30da94e6.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+def build_ansatz(num_qubits: int):
+    # Use 2 layers with optimized entangling pattern and single-qubit rotations
+    # Focus on improving expressibility (E) and trainability (T) while maintaining reliability (R)
+    reps = 2
+    # Parameter count: 2 rotations per qubit per layer * 2 layers = 48 parameters
+    theta = ParameterVector(&quot;theta&quot;, length=2 * num_qubits * reps)
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Initialize with Hartree-Fock state (occupied orbitals 0-9 for HF/STO-3G)
+    hf_states = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    for q in hf_states:
+        circuit.x(q)
+    
+    k = 0
+    for layer in range(reps):
+        # Add expressive single-qubit rotation layers
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        
+        # Use alternating entangling pattern with optimized connectivity
+        # Even layer: forward CX chain
+        if layer % 2 == 0:
+            for q in range(num_qubits - 1):
+                circuit.cx(q, q + 1)
+        # Odd layer: backward CX chain with reduced depth
+        else:
+            for q in range(num_qubits - 2, -1, -1):
+                circuit.cx(q + 1, q)
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+<h3>full_scores</h3>
+
+<details class="candidate" open>
+  <summary>Round 1</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth 11</span>
+  <span>params 6</span>
+  <span>size 104</span>
+</div>
+<div class='errors'>too few parameters: 6</div>
+
+  
+  <a href='../assets/ref_full_scores_qchem_hf_sto3g_1p02_r1_3ba4a42f1dce.png'><img class='circuit' src='../assets/ref_full_scores_qchem_hf_sto3g_1p02_r1_3ba4a42f1dce.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+def build_ansatz(num_qubits: int):
+    # Use 2 layers with entangling blocks and single-qubit rotations
+    # Include more rotation axes to improve expressibility and trainability
+    reps = 2
+    # Parameter count: 2 rotations per qubit per layer * num_qubits * reps
+    theta_x = ParameterVector(&quot;theta_x&quot;, length=num_qubits * reps)
+    theta_y = ParameterVector(&quot;theta_y&quot;, length=num_qubits * reps)
+    theta_z = ParameterVector(&quot;theta_z&quot;, length=num_qubits * reps)
+    
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state: occupy lowest 10 orbitals (indices 0-9)
+    for q in range(10):
+        circuit.x(q)
+    
+    k = 0
+    for layer in range(reps):
+        # Add three rotation layers for better expressibility
+        for q in range(num_qubits):
+            circuit.ry(theta_y[k], q)
+            circuit.rz(theta_z[k], q)
+            circuit.ry(theta_x[k], q)
+        k += 1
+        
+        # Entangling block with CZ-like connectivity (using CX)
+        # Use a ladder pattern to improve connectivity and reduce depth
+        for i in range(0, num_qubits - 1, 2):
+            circuit.cx(i, i + 1)
+        for i in range(1, num_qubits - 1, 2):
+            circuit.cx(i, i + 1)
+    
+    # Combine parameters into a single list
+    parameters = list(theta_x) + list(theta_y) + list(theta_z)
+    
+    return circuit, parameters</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 2</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 1.0000</span>
+  <span>T 1.0000</span>
+  <span>R 0.6969</span>
+  <span>Total 0.8990</span>
+  <span>depth 9</span>
+  <span>params 48</span>
+  <span>size 80</span>
+</div>
+
+
+  
+  <a href='../assets/ref_full_scores_qchem_hf_sto3g_1p02_r2_d23e5412fb4c.png'><img class='circuit' src='../assets/ref_full_scores_qchem_hf_sto3g_1p02_r2_d23e5412fb4c.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+def build_ansatz(num_qubits: int):
+    # Use 2 layers with entangling blocks and single-qubit rotations
+    # Based on successful Round 0 but with improved parameterization for better expressibility
+    reps = 2
+    # Parameter count: 2 rotations per qubit per layer * num_qubits * reps
+    theta = ParameterVector(&quot;theta&quot;, length=2 * reps * num_qubits)
+    
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state: occupy lowest 10 orbitals (indices 0-9)
+    for q in range(10):
+        circuit.x(q)
+    
+    k = 0
+    for layer in range(reps):
+        # Add rotation layers with alternating axes for better expressibility
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        
+        # Entangling block with alternating CX pattern for better connectivity
+        for i in range(0, num_qubits - 1, 2):
+            circuit.cx(i, i + 1)
+        for i in range(1, num_qubits - 1, 2):
+            circuit.cx(i, i + 1)
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 3</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth 16</span>
+  <span>params 108</span>
+  <span>size 151</span>
+</div>
+<div class='errors'>too many parameters: 108</div>
+
+  
+  <a href='../assets/ref_full_scores_qchem_hf_sto3g_1p02_r3_fbe955a12eef.png'><img class='circuit' src='../assets/ref_full_scores_qchem_hf_sto3g_1p02_r3_fbe955a12eef.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+def build_ansatz(num_qubits: int):
+    # Use 3 layers with improved entangling structure and rotation axes
+    # This increases expressibility while maintaining trainability and reliability
+    reps = 3
+    # Parameter count: 3 rotations per qubit per layer * num_qubits * reps
+    theta = ParameterVector(&quot;theta&quot;, length=3 * reps * num_qubits)
+    
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state: occupy lowest 10 orbitals (indices 0-9)
+    for q in range(10):
+        circuit.x(q)
+    
+    k = 0
+    for layer in range(reps):
+        # Add rotation layers with three different axes for better expressibility
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        
+        # Entangling block with alternating CX pattern for better connectivity
+        # Use a more complete connectivity pattern than previous versions
+        for i in range(0, num_qubits - 1, 2):
+            circuit.cx(i, i + 1)
+        for i in range(1, num_qubits - 1, 2):
+            circuit.cx(i, i + 1)
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+</section>
+    <section class='setting'><h2>From-Scratch</h2>
+
+<details class="candidate" open>
+  <summary>Round 0 Qwen initial from task only</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth 82</span>
+  <span>params 21</span>
+  <span>size 117</span>
+</div>
+<div class='errors'>disallowed gates: [&#x27;cry&#x27;]</div>
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split1_qwen_initial/prompts/qchem_hf_sto3g_1p02_initial.txt</div>
+  <a href='../assets/scratch_initial_qchem_hf_sto3g_1p02_r0_91f7a500d5d8.png'><img class='circuit' src='../assets/scratch_initial_qchem_hf_sto3g_1p02_r0_91f7a500d5d8.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # HF reference state: first 6 electrons in STO-3G HF for HF molecule
+    # Occupied orbitals: 1σ, 2σ, 3σ, 4σ, 5σ, 6σ (6 spin-orbitals)
+    # For 12 qubits (6 spin-orbitals), HF state is |111111000000⟩
+    
+    qc = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock reference state
+    for i in range(6):
+        qc.x(i)
+    
+    # Add UCCSD-like ansatz with single and double excitations
+    # Using restricted open-shell Hartree-Fock for HF molecule in STO-3G
+    # Active space: 6 orbitals (3 bonding + 3 antibonding), 6 electrons
+    # We&#x27;ll implement a simplified version of the UCCSD ansatz with real parameters
+    
+    # Parameters for single and double excitations
+    theta_s = ParameterVector(&#x27;θ_s&#x27;, 6)  # 6 single excitation parameters
+    theta_d = ParameterVector(&#x27;θ_d&#x27;, 15) # 15 double excitation parameters (6 choose 2 * 6 choose 2 / 2)
+    
+    # Single excitations: i → a (i: occupied, a: virtual)
+    # Occupied indices: 0,1,2,3,4,5; Virtual indices: 6,7,8,9,10,11
+    idx_s = 0
+    for i in range(6):  # occupied
+        for a in range(6, 12):  # virtual
+            # Implement single excitation using 4 RY and 2 RZ gates (standard implementation)
+            # Using the decomposition from arXiv:1704.05018
+            if idx_s &lt; len(theta_s):
+                # Controlled rotation between qubits i and a
+                qc.cry(theta_s[idx_s], i, a)
+                idx_s += 1
+    
+    # Double excitations: i,j → a,b (i&lt;j occupied, a&lt;b virtual)
+    idx_d = 0
+    for i in range(6):
+        for j in range(i+1, 6):
+            for a in range(6, 12):
+                for b in range(a+1, 12):
+                    if idx_d &lt; len(theta_d):
+                        # Implement double excitation using 15 gates (standard implementation)
+                        # Using the decomposition from arXiv:1805.04341
+                        # Controlled double excitation between i,j and a,b
+                        
+                        # Apply CNOT chain to prepare double excitation
+                        qc.cx(j, i)
+                        qc.cx(a, b)
+                        qc.cry(theta_d[idx_d], i, b)
+                        qc.cx(i, a)
+                        qc.cry(-theta_d[idx_d], i, b)
+                        qc.cx(j, i)
+                        qc.cx(a, b)
+                        idx_d += 1
+    
+    return qc, list(theta_s) + list(theta_d)</code></pre>
+</details>
+
+<h3>train_only</h3>
+
+<details class="candidate" open>
+  <summary>Round 1</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 1.0000</span>
+  <span>T 1.0000</span>
+  <span>R 0.1045</span>
+  <span>Total 0.7015</span>
+  <span>depth 81</span>
+  <span>params 45</span>
+  <span>size 159</span>
+</div>
+
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split1_qwen_feedback/train_only/prompts/qchem_hf_sto3g_1p02_round1.txt</div>
+  <a href='../assets/scratch_train_only_qchem_hf_sto3g_1p02_r1_cd8f02b02c57.png'><img class='circuit' src='../assets/scratch_train_only_qchem_hf_sto3g_1p02_r1_cd8f02b02c57.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # HF reference state for HF in STO-3G: 6 electrons occupy 6 spin-orbitals
+    # Qubit encoding: |111111000000⟩ for occupied orbitals 0-5
+    qc = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock reference state
+    for i in range(6):
+        qc.x(i)
+    
+    # Create parameter vectors for single and double excitations
+    # Using a compact, hardware-efficient implementation
+    theta_s = ParameterVector(&#x27;θ_s&#x27;, 6)   # 6 single excitation parameters
+    theta_d = ParameterVector(&#x27;θ_d&#x27;, 15)  # 15 double excitation parameters
+    
+    # Single excitations: i -&gt; a (i in occupied, a in virtual)
+    for idx, i in enumerate(range(6)):
+        a = i + 6  # corresponding virtual orbital
+        # Implement single excitation using Ry rotation with controlled phase
+        qc.ry(theta_s[idx], a)
+        qc.cx(a, i)
+        qc.ry(-theta_s[idx], a)
+        qc.cx(a, i)
+    
+    # Double excitations: i,j -&gt; a,b (i&lt;j in occupied, a&lt;b in virtual)
+    # Using the standard decomposition from arXiv:1805.04341
+    idx = 0
+    for i in range(6):
+        for j in range(i+1, 6):
+            for a in range(6, 12):
+                for b in range(a+1, 12):
+                    if idx &lt; len(theta_d):
+                        # Map indices to qubits (occupied: 0-5, virtual: 6-11)
+                        i_q, j_q = i, j
+                        a_q, b_q = a, b
+                        
+                        # Standard double excitation circuit
+                        qc.cx(j_q, i_q)
+                        qc.cx(a_q, b_q)
+                        qc.ry(theta_d[idx], i_q)
+                        qc.cx(i_q, a_q)
+                        qc.ry(-theta_d[idx], i_q)
+                        qc.cx(j_q, i_q)
+                        qc.cx(a_q, b_q)
+                        idx += 1
+    
+    # Add a layer of trainable RZ gates for additional expressibility
+    theta_rz = ParameterVector(&#x27;θ_rz&#x27;, num_qubits)
+    for i in range(num_qubits):
+        qc.rz(theta_rz[i], i)
+    
+    # Add a layer of trainable RX gates for enhanced expressibility
+    theta_rx = ParameterVector(&#x27;θ_rx&#x27;, num_qubits)
+    for i in range(num_qubits):
+        qc.rx(theta_rx[i], i)
+    
+    # Combine all parameters
+    all_params = list(theta_s) + list(theta_d) + list(theta_rz) + list(theta_rx)
+    
+    return qc, all_params</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 2</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 1.0000</span>
+  <span>T 1.0000</span>
+  <span>R 0.1158</span>
+  <span>Total 0.7053</span>
+  <span>depth 81</span>
+  <span>params 45</span>
+  <span>size 159</span>
+</div>
+
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split1_qwen_feedback/train_only/prompts/qchem_hf_sto3g_1p02_round2.txt</div>
+  <a href='../assets/scratch_train_only_qchem_hf_sto3g_1p02_r2_df2c05da4fa6.png'><img class='circuit' src='../assets/scratch_train_only_qchem_hf_sto3g_1p02_r2_df2c05da4fa6.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # HF reference state for HF in STO-3G: 6 electrons occupy 6 spin-orbitals
+    # Qubit encoding: |111111000000⟩ for occupied orbitals 0-5
+    qc = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock reference state
+    for i in range(6):
+        qc.x(i)
+    
+    # Create parameter vectors for single and double excitations
+    theta_s = ParameterVector(&#x27;θ_s&#x27;, 6)   # 6 single excitation parameters
+    theta_d = ParameterVector(&#x27;θ_d&#x27;, 15)  # 15 double excitation parameters
+    
+    # Single excitations: i -&gt; a (i in occupied, a in virtual)
+    for idx, i in enumerate(range(6)):
+        a = i + 6  # corresponding virtual orbital
+        # Implement single excitation using Ry rotation with controlled phase
+        qc.ry(theta_s[idx], a)
+        qc.cx(a, i)
+        qc.ry(-theta_s[idx], a)
+        qc.cx(a, i)
+    
+    # Double excitations: i,j -&gt; a,b (i&lt;j in occupied, a&lt;b in virtual)
+    idx = 0
+    for i in range(6):
+        for j in range(i+1, 6):
+            for a in range(6, 12):
+                for b in range(a+1, 12):
+                    if idx &lt; len(theta_d):
+                        # Map indices to qubits (occupied: 0-5, virtual: 6-11)
+                        i_q, j_q = i, j
+                        a_q, b_q = a, b
+                        
+                        # Standard double excitation circuit
+                        qc.cx(j_q, i_q)
+                        qc.cx(a_q, b_q)
+                        qc.ry(theta_d[idx], i_q)
+                        qc.cx(i_q, a_q)
+                        qc.ry(-theta_d[idx], i_q)
+                        qc.cx(j_q, i_q)
+                        qc.cx(a_q, b_q)
+                        idx += 1
+    
+    # Add a single layer of RY gates for expressibility with minimal gate count
+    theta_ry = ParameterVector(&#x27;θ_ry&#x27;, num_qubits)
+    for i in range(num_qubits):
+        qc.ry(theta_ry[i], i)
+    
+    # Add a single layer of RZ gates for expressibility with minimal gate count
+    theta_rz = ParameterVector(&#x27;θ_rz&#x27;, num_qubits)
+    for i in range(num_qubits):
+        qc.rz(theta_rz[i], i)
+    
+    # Combine all parameters
+    all_params = list(theta_s) + list(theta_d) + list(theta_ry) + list(theta_rz)
+    
+    return qc, all_params</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 3</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 1.0000</span>
+  <span>T 1.0000</span>
+  <span>R 0.1158</span>
+  <span>Total 0.7053</span>
+  <span>depth 81</span>
+  <span>params 45</span>
+  <span>size 159</span>
+</div>
+
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split1_qwen_feedback/train_only/prompts/qchem_hf_sto3g_1p02_round3.txt</div>
+  <a href='../assets/scratch_train_only_qchem_hf_sto3g_1p02_r3_188072428817.png'><img class='circuit' src='../assets/scratch_train_only_qchem_hf_sto3g_1p02_r3_188072428817.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # HF reference state for HF in STO-3G: 6 electrons occupy 6 spin-orbitals
+    # Qubit encoding: |111111000000⟩ for occupied orbitals 0-5
+    qc = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock reference state
+    for i in range(6):
+        qc.x(i)
+    
+    # Create parameter vectors for single and double excitations
+    theta_s = ParameterVector(&#x27;θ_s&#x27;, 6)   # 6 single excitation parameters
+    theta_d = ParameterVector(&#x27;θ_d&#x27;, 15)  # 15 double excitation parameters
+    
+    # Single excitations: i -&gt; a (i in occupied, a in virtual)
+    for idx, i in enumerate(range(6)):
+        a = i + 6  # corresponding virtual orbital
+        # Implement single excitation using Ry rotation with controlled phase
+        qc.ry(theta_s[idx], a)
+        qc.cx(a, i)
+        qc.ry(-theta_s[idx], a)
+        qc.cx(a, i)
+    
+    # Double excitations: i,j -&gt; a,b (i&lt;j in occupied, a&lt;b in virtual)
+    idx = 0
+    for i in range(6):
+        for j in range(i+1, 6):
+            for a in range(6, 12):
+                for b in range(a+1, 12):
+                    if idx &lt; len(theta_d):
+                        # Map indices to qubits (occupied: 0-5, virtual: 6-11)
+                        i_q, j_q = i, j
+                        a_q, b_q = a, b
+                        
+                        # Standard double excitation circuit
+                        qc.cx(j_q, i_q)
+                        qc.cx(a_q, b_q)
+                        qc.ry(theta_d[idx], i_q)
+                        qc.cx(i_q, a_q)
+                        qc.ry(-theta_d[idx], i_q)
+                        qc.cx(j_q, i_q)
+                        qc.cx(a_q, b_q)
+                        idx += 1
+    
+    # Add a single layer of RY gates for expressibility with minimal gate count
+    theta_ry = ParameterVector(&#x27;θ_ry&#x27;, num_qubits)
+    for i in range(num_qubits):
+        qc.ry(theta_ry[i], i)
+    
+    # Add a single layer of RZ gates for expressibility with minimal gate count
+    theta_rz = ParameterVector(&#x27;θ_rz&#x27;, num_qubits)
+    for i in range(num_qubits):
+        qc.rz(theta_rz[i], i)
+    
+    # Combine all parameters
+    all_params = list(theta_s) + list(theta_d) + list(theta_ry) + list(theta_rz)
+    
+    return qc, all_params</code></pre>
+</details>
+
+<h3>reliability_only</h3>
+
+<details class="candidate" open>
+  <summary>Round 1</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 1.0000</span>
+  <span>T 1.0000</span>
+  <span>R 0.0037</span>
+  <span>Total 0.6679</span>
+  <span>depth 118</span>
+  <span>params 33</span>
+  <span>size 297</span>
+</div>
+
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split1_qwen_feedback/reliability_only/prompts/qchem_hf_sto3g_1p02_round1.txt</div>
+  <a href='../assets/scratch_reliability_only_qchem_hf_sto3g_1p02_r1_e2802783797a.png'><img class='circuit' src='../assets/scratch_reliability_only_qchem_hf_sto3g_1p02_r1_e2802783797a.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # HF reference state for HF in STO-3G: 6 electrons occupy the first 6 spin-orbitals
+    # Qubit encoding: |1⟩ means occupied, |0⟩ means unoccupied
+    qc = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock reference state |111111000000⟩
+    for i in range(6):
+        qc.x(i)
+    
+    # Create parameter vectors for single and double excitations
+    # For STO-3G HF with 6 spin-orbitals, we have 6 occupied and 6 virtual orbitals
+    # We&#x27;ll use a simplified UCCSD ansatz with real parameters
+    
+    # Single excitations: 6 occupied → 6 virtual = 36 possible, but we limit to 6 most significant
+    theta_s = ParameterVector(&#x27;θ_s&#x27;, 6)
+    # Double excitations: C(6,2) * C(6,2) = 15 * 15 = 225 possible, but we limit to 15 most significant
+    theta_d = ParameterVector(&#x27;θ_d&#x27;, 15)
+    
+    # Single excitations: i → a (i: occupied index 0-5, a: virtual index 6-11)
+    # We select the most chemically significant excitations: 1σ→4σ*, 2σ→4σ*, 3σ→4σ*, 4σ→5σ*, 5σ→5σ*, 6σ→5σ*
+    # Using standard decomposition for single excitation (4 RY, 2 RZ, 3 CNOT)
+    idx_s = 0
+    # Selected single excitations: (0,6), (1,7), (2,8), (3,9), (4,10), (5,11)
+    for i, a in [(0,6), (1,7), (2,8), (3,9), (4,10), (5,11)]:
+        if idx_s &lt; len(theta_s):
+            # Implement single excitation using the standard decomposition
+            # |00⟩ → |00⟩, |01⟩ → cos(θ)|01⟩ + sin(θ)|10⟩, |10⟩ → -sin(θ)|01⟩ + cos(θ)|10⟩, |11⟩ → |11⟩
+            qc.ry(theta_s[idx_s]/2, a)
+            qc.cx(a, i)
+            qc.ry(-theta_s[idx_s]/2, a)
+            qc.cx(i, a)
+            idx_s += 1
+    
+    # Double excitations: i,j → a,b (i&lt;j occupied, a&lt;b virtual)
+    # We select the most significant double excitations involving the 4σ orbital (index 3)
+    # Selected double excitations: (0,1)→(6,7), (0,2)→(6,8), (1,2)→(7,8), (0,3)→(6,9), (1,3)→(7,9),
+    # (2,3)→(8,9), (0,4)→(6,10), (1,4)→(7,10), (2,4)→(8,10), (3,4)→(9,10), (0,5)→(6,11),
+    # (1,5)→(7,11), (2,5)→(8,11), (3,5)→(9,11), (4,5)→(10,11)
+    idx_d = 0
+    selected_pairs = [
+        (0,1,6,7), (0,2,6,8), (1,2,7,8), (0,3,6,9), (1,3,7,9),
+        (2,3,8,9), (0,4,6,10), (1,4,7,10), (2,4,8,10), (3,4,9,10),
+        (0,5,6,11), (1,5,7,11), (2,5,8,11), (3,5,9,11), (4,5,10,11)
+    ]
+    
+    for i, j, a, b in selected_pairs:
+        if idx_d &lt; len(theta_d):
+            # Implement double excitation using the standard decomposition (15 gates)
+            # Based on arXiv:1805.04341
+            qc.cx(j, i)
+            qc.cx(a, b)
+            qc.ry(theta_d[idx_d]/2, b)
+            qc.cx(i, b)
+            qc.ry(-theta_d[idx_d]/2, b)
+            qc.cx(i, a)
+            qc.ry(-theta_d[idx_d]/2, a)
+            qc.cx(j, a)
+            qc.ry(theta_d[idx_d]/2, a)
+            qc.cx(j, i)
+            qc.cx(a, b)
+            qc.ry(theta_d[idx_d]/2, b)
+            qc.cx(i, b)
+            qc.ry(-theta_d[idx_d]/2, b)
+            qc.cx(i, a)
+            qc.ry(-theta_d[idx_d]/2, a)
+            qc.cx(j, a)
+            idx_d += 1
+    
+    # Add a final layer of trainable RY gates on all qubits for additional expressibility
+    theta_final = ParameterVector(&#x27;θ_final&#x27;, num_qubits)
+    for i in range(num_qubits):
+        qc.ry(theta_final[i], i)
+    
+    # Combine all parameters
+    all_params = list(theta_s) + list(theta_d) + list(theta_final)
+    
+    return qc, all_params</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 2</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 0.9811</span>
+  <span>T 1.0000</span>
+  <span>R 0.0044</span>
+  <span>Total 0.6618</span>
+  <span>depth 118</span>
+  <span>params 33</span>
+  <span>size 297</span>
+</div>
+
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split1_qwen_feedback/reliability_only/prompts/qchem_hf_sto3g_1p02_round2.txt</div>
+  <a href='../assets/scratch_reliability_only_qchem_hf_sto3g_1p02_r2_ba7ca9d2407a.png'><img class='circuit' src='../assets/scratch_reliability_only_qchem_hf_sto3g_1p02_r2_ba7ca9d2407a.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # HF reference state for HF in STO-3G: 6 electrons occupy the first 6 spin-orbitals
+    # Qubit encoding: |1⟩ means occupied, |0⟩ means unoccupied
+    qc = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock reference state |111111000000⟩
+    for i in range(6):
+        qc.x(i)
+    
+    # Create parameter vectors for single and double excitations
+    # Use a compact but expressive ansatz that balances trainability and expressibility
+    theta_s = ParameterVector(&#x27;θ_s&#x27;, 6)
+    theta_d = ParameterVector(&#x27;θ_d&#x27;, 15)
+    
+    # Single excitations: i → a (i: occupied index 0-5, a: virtual index 6-11)
+    # Use the most chemically significant excitations with standard decomposition
+    idx_s = 0
+    for i, a in [(0,6), (1,7), (2,8), (3,9), (4,10), (5,11)]:
+        # Standard single excitation decomposition using 2 CNOTs
+        qc.ry(theta_s[idx_s]/2, a)
+        qc.cx(a, i)
+        qc.ry(-theta_s[idx_s]/2, a)
+        qc.cx(i, a)
+        idx_s += 1
+    
+    # Double excitations: i,j → a,b (i&lt;j occupied, a&lt;b virtual)
+    # Use the same selected pairs as before but with optimized decomposition
+    idx_d = 0
+    selected_pairs = [
+        (0,1,6,7), (0,2,6,8), (1,2,7,8), (0,3,6,9), (1,3,7,9),
+        (2,3,8,9), (0,4,6,10), (1,4,7,10), (2,4,8,10), (3,4,9,10),
+        (0,5,6,11), (1,5,7,11), (2,5,8,11), (3,5,9,11), (4,5,10,11)
+    ]
+    
+    for i, j, a, b in selected_pairs:
+        # Optimized double excitation decomposition with fewer CNOTs
+        # Based on arXiv:1805.04341 but with improved gate count
+        qc.cx(j, i)
+        qc.cx(a, b)
+        qc.ry(theta_d[idx_d]/2, b)
+        qc.cx(i, b)
+        qc.ry(-theta_d[idx_d]/2, b)
+        qc.cx(i, a)
+        qc.ry(-theta_d[idx_d]/2, a)
+        qc.cx(j, a)
+        qc.ry(theta_d[idx_d]/2, a)
+        qc.cx(j, i)
+        qc.cx(a, b)
+        qc.ry(theta_d[idx_d]/2, b)
+        qc.cx(i, b)
+        qc.ry(-theta_d[idx_d]/2, b)
+        qc.cx(i, a)
+        qc.ry(-theta_d[idx_d]/2, a)
+        qc.cx(j, a)
+        idx_d += 1
+    
+    # Add a compact layer of trainable RZ gates for expressibility without increasing depth much
+    theta_z = ParameterVector(&#x27;θ_z&#x27;, num_qubits)
+    for i in range(num_qubits):
+        qc.rz(theta_z[i], i)
+    
+    # Combine all parameters
+    all_params = list(theta_s) + list(theta_d) + list(theta_z)
+    
+    return qc, all_params</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 3</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 0.9293</span>
+  <span>T 1.0000</span>
+  <span>R 0.0124</span>
+  <span>Total 0.6472</span>
+  <span>depth 92</span>
+  <span>params 22</span>
+  <span>size 206</span>
+</div>
+
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split1_qwen_feedback/reliability_only/prompts/qchem_hf_sto3g_1p02_round3.txt</div>
+  <a href='../assets/scratch_reliability_only_qchem_hf_sto3g_1p02_r3_ad245f0ce3aa.png'><img class='circuit' src='../assets/scratch_reliability_only_qchem_hf_sto3g_1p02_r3_ad245f0ce3aa.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # HF reference state for HF in STO-3G: 6 electrons occupy the first 6 spin-orbitals
+    # Qubit encoding: |1⟩ means occupied, |0⟩ means unoccupied
+    qc = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock reference state |111111000000⟩
+    for i in range(6):
+        qc.x(i)
+    
+    # Create parameter vectors - use a compact but expressive ansatz
+    # Optimize for trainability by reducing parameter count while maintaining expressibility
+    theta_s = ParameterVector(&#x27;θ_s&#x27;, 6)
+    theta_d = ParameterVector(&#x27;θ_d&#x27;, 10)  # Reduced from 15 to improve trainability
+    
+    # Single excitations: i → a (i: occupied index 0-5, a: virtual index 6-11)
+    # Use the most chemically significant excitations with standard decomposition
+    idx_s = 0
+    for i, a in [(0,6), (1,7), (2,8), (3,9), (4,10), (5,11)]:
+        # Standard single excitation decomposition using 2 CNOTs
+        qc.ry(theta_s[idx_s]/2, a)
+        qc.cx(a, i)
+        qc.ry(-theta_s[idx_s]/2, a)
+        qc.cx(i, a)
+        idx_s += 1
+    
+    # Double excitations: i,j → a,b (i&lt;j occupied, a&lt;b virtual)
+    # Select the most significant double excitations involving adjacent orbitals
+    # to improve trainability while maintaining chemical accuracy
+    idx_d = 0
+    selected_pairs = [
+        (0,1,6,7), (1,2,7,8), (2,3,8,9), (3,4,9,10), (4,5,10,11),  # Sequential pairs
+        (0,2,6,8), (1,3,7,9), (2,4,8,10), (3,5,9,11),              # Skip-one pairs
+        (0,3,6,9)                                                    # Long-range pair
+    ]
+    
+    for i, j, a, b in selected_pairs:
+        # Optimized double excitation decomposition with fewer CNOTs
+        # Based on arXiv:1805.04341 but with improved gate count for reliability
+        qc.cx(j, i)
+        qc.cx(a, b)
+        qc.ry(theta_d[idx_d]/2, b)
+        qc.cx(i, b)
+        qc.ry(-theta_d[idx_d]/2, b)
+        qc.cx(i, a)
+        qc.ry(-theta_d[idx_d]/2, a)
+        qc.cx(j, a)
+        qc.ry(theta_d[idx_d]/2, a)
+        qc.cx(j, i)
+        qc.cx(a, b)
+        qc.ry(theta_d[idx_d]/2, b)
+        qc.cx(i, b)
+        qc.ry(-theta_d[idx_d]/2, b)
+        qc.cx(i, a)
+        qc.ry(-theta_d[idx_d]/2, a)
+        qc.cx(j, a)
+        idx_d += 1
+    
+    # Add a compact layer of trainable RZ gates for expressibility without increasing depth much
+    # Use fewer parameters to improve trainability while maintaining expressibility
+    theta_z = ParameterVector(&#x27;θ_z&#x27;, num_qubits // 2)
+    for i in range(0, num_qubits, 2):
+        qc.rz(theta_z[i // 2], i)
+    
+    # Combine all parameters
+    all_params = list(theta_s) + list(theta_d) + list(theta_z)
+    
+    return qc, all_params</code></pre>
+</details>
+
+<h3>full_scores</h3>
+
+<details class="candidate" open>
+  <summary>Round 1</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth 48</span>
+  <span>params 15</span>
+  <span>size 147</span>
+</div>
+<div class='errors'>too few parameters: 15</div>
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split1_qwen_feedback/full_scores/prompts/qchem_hf_sto3g_1p02_round1.txt</div>
+  <a href='../assets/scratch_full_scores_qchem_hf_sto3g_1p02_r1_f49f02c05aae.png'><img class='circuit' src='../assets/scratch_full_scores_qchem_hf_sto3g_1p02_r1_f49f02c05aae.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # HF reference state for HF in STO-3G: 6 electrons fill the first 6 spin-orbitals
+    qc = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock reference state |111111000000&gt;
+    for i in range(6):
+        qc.x(i)
+    
+    # Create parameter vectors for single and double excitations
+    # Using a compact, hardware-efficient implementation
+    theta_s = ParameterVector(&#x27;θ_s&#x27;, 6)   # 6 single excitation parameters
+    theta_d = ParameterVector(&#x27;θ_d&#x27;, 9)   # 9 double excitation parameters (selected most significant)
+    
+    # Single excitations: i → a (i: occupied 0-5, a: virtual 6-11)
+    for i in range(6):
+        a = i + 6
+        # Implement single excitation using 4 RY and 2 RZ gates (standard decomposition)
+        # Using the decomposition from arXiv:1704.05018
+        qc.ry(theta_s[i]/2, a)
+        qc.ry(theta_s[i]/2, i)
+        qc.cx(a, i)
+        qc.rz(-theta_s[i], i)
+        qc.cx(a, i)
+        qc.ry(-theta_s[i]/2, a)
+        qc.ry(-theta_s[i]/2, i)
+    
+    # Double excitations: i,j → a,b (selected combinations for hardware efficiency)
+    # Using the decomposition from arXiv:1805.04341
+    # Selected double excitations: (0,1)-&gt;(6,7), (0,2)-&gt;(6,8), (0,3)-&gt;(6,9), 
+    # (0,4)-&gt;(6,10), (0,5)-&gt;(6,11), (1,2)-&gt;(7,8), (1,3)-&gt;(7,9), (2,3)-&gt;(8,9), (0,1)-&gt;(7,8)
+    pairs = [(0,1,6,7), (0,2,6,8), (0,3,6,9), (0,4,6,10), (0,5,6,11),
+             (1,2,7,8), (1,3,7,9), (2,3,8,9), (0,1,7,8)]
+    
+    for idx, (i, j, a, b) in enumerate(pairs):
+        if idx &lt; len(theta_d):
+            # Implement double excitation using 15 gates (standard implementation)
+            qc.cx(j, i)
+            qc.cx(a, b)
+            qc.ry(theta_d[idx]/2, b)
+            qc.ry(theta_d[idx]/2, a)
+            qc.cx(i, a)
+            qc.rz(-theta_d[idx], a)
+            qc.cx(i, a)
+            qc.ry(-theta_d[idx]/2, b)
+            qc.ry(-theta_d[idx]/2, a)
+            qc.cx(j, i)
+            qc.cx(a, b)
+    
+    return qc, list(theta_s) + list(theta_d)</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 2</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth 41</span>
+  <span>params 12</span>
+  <span>size 114</span>
+</div>
+<div class='errors'>too few parameters: 12</div>
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split1_qwen_feedback/full_scores/prompts/qchem_hf_sto3g_1p02_round2.txt</div>
+  <a href='../assets/scratch_full_scores_qchem_hf_sto3g_1p02_r2_dfa0dcbb04ea.png'><img class='circuit' src='../assets/scratch_full_scores_qchem_hf_sto3g_1p02_r2_dfa0dcbb04ea.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # HF reference state for HF in STO-3G: 6 electrons fill the first 6 spin-orbitals
+    qc = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock reference state |111111000000&gt;
+    for i in range(6):
+        qc.x(i)
+    
+    # Create parameter vectors - use compact but expressive ansatz
+    # Use 6 single excitation parameters and 6 double excitation parameters
+    theta_s = ParameterVector(&#x27;θ_s&#x27;, 6)
+    theta_d = ParameterVector(&#x27;θ_d&#x27;, 6)
+    
+    # Single excitations: i → i+6 for i in 0..5
+    for i in range(6):
+        a = i + 6
+        # Implement single excitation using 4 RY and 2 RZ gates (standard decomposition)
+        qc.ry(theta_s[i]/2, a)
+        qc.ry(theta_s[i]/2, i)
+        qc.cx(a, i)
+        qc.rz(-theta_s[i], i)
+        qc.cx(a, i)
+        qc.ry(-theta_s[i]/2, a)
+        qc.ry(-theta_s[i]/2, i)
+    
+    # Double excitations: use the most significant excitations for HF molecule
+    # Selected pairs based on chemical intuition: (0,1)-&gt;(6,7), (0,2)-&gt;(6,8), (0,3)-&gt;(6,9),
+    # (1,2)-&gt;(7,8), (0,1)-&gt;(7,8), (0,2)-&gt;(7,9)
+    pairs = [(0,1,6,7), (0,2,6,8), (0,3,6,9), (1,2,7,8), (0,1,7,8), (0,2,7,9)]
+    
+    for idx, (i, j, a, b) in enumerate(pairs):
+        # Implement double excitation using 15 gates (standard implementation)
+        qc.cx(j, i)
+        qc.cx(a, b)
+        qc.ry(theta_d[idx]/2, b)
+        qc.ry(theta_d[idx]/2, a)
+        qc.cx(i, a)
+        qc.rz(-theta_d[idx], a)
+        qc.cx(i, a)
+        qc.ry(-theta_d[idx]/2, b)
+        qc.ry(-theta_d[idx]/2, a)
+        qc.cx(j, i)
+        qc.cx(a, b)
+    
+    return qc, list(theta_s) + list(theta_d)</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 3</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth 41</span>
+  <span>params 12</span>
+  <span>size 114</span>
+</div>
+<div class='errors'>too few parameters: 12</div>
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_from_scratch_tstrict_20260629_152941_split1_qwen_feedback/full_scores/prompts/qchem_hf_sto3g_1p02_round3.txt</div>
+  <a href='../assets/scratch_full_scores_qchem_hf_sto3g_1p02_r3_5203fb16772a.png'><img class='circuit' src='../assets/scratch_full_scores_qchem_hf_sto3g_1p02_r3_5203fb16772a.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # HF reference state for HF in STO-3G: 6 electrons fill the first 6 spin-orbitals
+    qc = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock reference state |111111000000&gt;
+    for i in range(6):
+        qc.x(i)
+    
+    # Create parameter vectors - use compact but expressive ansatz
+    # Use 6 single excitation parameters and 6 double excitation parameters
+    theta_s = ParameterVector(&#x27;θ_s&#x27;, 6)
+    theta_d = ParameterVector(&#x27;θ_d&#x27;, 6)
+    
+    # Single excitations: i → i+6 for i in 0..5
+    for i in range(6):
+        a = i + 6
+        # Implement single excitation using 4 RY and 2 RZ gates (standard decomposition)
+        qc.ry(theta_s[i]/2, a)
+        qc.ry(theta_s[i]/2, i)
+        qc.cx(a, i)
+        qc.rz(-theta_s[i], i)
+        qc.cx(a, i)
+        qc.ry(-theta_s[i]/2, a)
+        qc.ry(-theta_s[i]/2, i)
+    
+    # Double excitations: use the most significant excitations for HF molecule
+    # Selected pairs based on chemical intuition and hardware efficiency
+    pairs = [(0,1,6,7), (0,2,6,8), (0,3,6,9), (1,2,7,8), (0,1,7,8), (0,2,7,9)]
+    
+    for idx, (i, j, a, b) in enumerate(pairs):
+        # Implement double excitation using 15 gates (standard implementation)
+        qc.cx(j, i)
+        qc.cx(a, b)
+        qc.ry(theta_d[idx]/2, b)
+        qc.ry(theta_d[idx]/2, a)
+        qc.cx(i, a)
+        qc.rz(-theta_d[idx], a)
+        qc.cx(i, a)
+        qc.ry(-theta_d[idx]/2, b)
+        qc.ry(-theta_d[idx]/2, a)
+        qc.cx(j, i)
+        qc.cx(a, b)
+    
+    return qc, list(theta_s) + list(theta_d)</code></pre>
+</details>
+
+</section>
+  </main>
+</body>
+</html>
