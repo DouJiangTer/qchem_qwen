@@ -15,6 +15,7 @@ This static viewer compares two Qwen3-Coder ansatz-generation settings on the sa
 - Model: `qwen3-coder-next-fp8`.
 - Rounds: 3 feedback rounds.
 - Regimes:
+  - `expr_only`
   - `train_only`
   - `reliability_only`
   - `full_scores`

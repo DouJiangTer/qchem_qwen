@@ -80,6 +80,190 @@ def build_ansatz(num_qubits: int):
     return circuit, list(theta)</code></pre>
 </details>
 
+<h3>expr_only</h3>
+
+<details class="candidate" open>
+  <summary>Round 1</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 1.0000</span>
+  <span>T 0.3912</span>
+  <span>R 0.4268</span>
+  <span>Total 0.6060</span>
+  <span>depth 73</span>
+  <span>params 72</span>
+  <span>size 142</span>
+</div>
+
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_expr_only_supplement_20260630_210326_split0_reference_start_qwen3_feedback/expr_only/prompts/qchem_lih_sto3g_1p68_round1.txt</div>
+  <a href='../assets/ref_expr_only_qchem_lih_sto3g_1p68_r1_57fff22b1f63.png'><img class='circuit' src='../assets/ref_expr_only_qchem_lih_sto3g_1p68_r1_57fff22b1f63.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+HF_OCCUPIED = [0, 1, 2, 3]
+
+
+def build_ansatz(num_qubits: int):
+    # Use 3 layers for better expressibility while keeping depth reasonable
+    reps = 3
+    # Use 2 parameters per qubit per layer (ry + rz) + 1 for overall scaling control
+    # But to match the original parameter count structure and improve trainability,
+    # use 2 parameters per qubit per layer
+    theta = ParameterVector(&quot;theta&quot;, length=2 * reps * num_qubits)
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state
+    for q in HF_OCCUPIED:
+        circuit.x(q)
+    
+    k = 0
+    for layer in range(reps):
+        # Single-qubit rotations for expressibility
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        
+        # Improved entanglement structure: alternating CX directions
+        # First set: forward coupling
+        for q in range(num_qubits - 1):
+            circuit.cx(q, q + 1)
+        
+        # Second set: backward coupling with parameterized Z rotations in between for better expressibility
+        if num_qubits &gt; 2:
+            for q in range(num_qubits - 2, -1, -1):
+                circuit.cx(q + 1, q)
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 2</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 1.0000</span>
+  <span>T 0.4912</span>
+  <span>R 0.5136</span>
+  <span>Total 0.6683</span>
+  <span>depth 51</span>
+  <span>params 72</span>
+  <span>size 120</span>
+</div>
+
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_expr_only_supplement_20260630_210326_split0_reference_start_qwen3_feedback/expr_only/prompts/qchem_lih_sto3g_1p68_round2.txt</div>
+  <a href='../assets/ref_expr_only_qchem_lih_sto3g_1p68_r2_4ffb459e2c40.png'><img class='circuit' src='../assets/ref_expr_only_qchem_lih_sto3g_1p68_r2_4ffb459e2c40.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+HF_OCCUPIED = [0, 1, 2, 3]
+
+
+def build_ansatz(num_qubits: int):
+    # Use 2 layers to balance expressibility and trainability
+    reps = 2
+    # Use 3 parameters per qubit per layer: ry, rz, ry for better expressibility
+    # while keeping parameter count reasonable for trainability
+    theta = ParameterVector(&quot;theta&quot;, length=3 * reps * num_qubits)
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state
+    for q in HF_OCCUPIED:
+        circuit.x(q)
+    
+    k = 0
+    for layer in range(reps):
+        # Three single-qubit rotations per qubit for better expressibility
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        
+        # Entanglement structure with alternating CX directions
+        # Forward coupling
+        for q in range(num_qubits - 1):
+            circuit.cx(q, q + 1)
+        
+        # Backward coupling for full connectivity
+        if num_qubits &gt; 2:
+            for q in range(num_qubits - 2, -1, -1):
+                circuit.cx(q + 1, q)
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 3</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 1.0000</span>
+  <span>T 0.5205</span>
+  <span>R 0.5654</span>
+  <span>Total 0.6953</span>
+  <span>depth 49</span>
+  <span>params 48</span>
+  <span>size 96</span>
+</div>
+
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_expr_only_supplement_20260630_210326_split0_reference_start_qwen3_feedback/expr_only/prompts/qchem_lih_sto3g_1p68_round3.txt</div>
+  <a href='../assets/ref_expr_only_qchem_lih_sto3g_1p68_r3_de10b505fad2.png'><img class='circuit' src='../assets/ref_expr_only_qchem_lih_sto3g_1p68_r3_de10b505fad2.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+HF_OCCUPIED = [0, 1, 2, 3]
+
+
+def build_ansatz(num_qubits: int):
+    # Use 2 layers to balance expressibility and trainability
+    reps = 2
+    # Use 2 parameters per qubit per layer (ry + rz) for trainability
+    theta = ParameterVector(&quot;theta&quot;, length=2 * reps * num_qubits)
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state
+    for q in HF_OCCUPIED:
+        circuit.x(q)
+    
+    k = 0
+    for layer in range(reps):
+        # Single-qubit rotations for expressibility
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        
+        # Entanglement structure with alternating CX directions
+        # Forward coupling
+        for q in range(num_qubits - 1):
+            circuit.cx(q, q + 1)
+        
+        # Backward coupling for full connectivity
+        if num_qubits &gt; 2:
+            for q in range(num_qubits - 2, -1, -1):
+                circuit.cx(q + 1, q)
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
 <h3>train_only</h3>
 
 <details class="candidate" open>
@@ -691,6 +875,169 @@ def build_ansatz(num_qubits):
     for i in range(0, 12, 2):
         qc.ry(params[12 + 2*i], i)
         qc.ry(params[13 + 2*i], i+1)
+    
+    return qc, params</code></pre>
+</details>
+
+<h3>expr_only</h3>
+
+<details class="candidate" open>
+  <summary>Round 1</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 0.4591</span>
+  <span>T 0.6613</span>
+  <span>R 0.6735</span>
+  <span>Total 0.5980</span>
+  <span>depth 16</span>
+  <span>params 24</span>
+  <span>size 58</span>
+</div>
+
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_expr_only_supplement_20260630_210326_split0_from_scratch_qwen_feedback/expr_only/prompts/qchem_lih_sto3g_1p68_round1.txt</div>
+  <a href='../assets/scratch_expr_only_qchem_lih_sto3g_1p68_r1_f90b7cef9f45.png'><img class='circuit' src='../assets/scratch_expr_only_qchem_lih_sto3g_1p68_r1_f90b7cef9f45.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # Optimized ansatz for LiH STO-3G with 12 qubits
+    # Improves expressibility while maintaining trainability and reliability
+    
+    qc = QuantumCircuit(num_qubits)
+    # Use 2 parameters per qubit for better expressibility with manageable depth
+    params = ParameterVector(&#x27;θ&#x27;, length=2 * num_qubits)
+    
+    # First layer: Y rotations for initial excitation
+    for i in range(num_qubits):
+        qc.ry(params[2*i], i)
+    
+    # Entangling layers with CZ gates in alternating pattern
+    for i in range(num_qubits - 1):
+        qc.cz(i, i + 1)
+    
+    # Second layer: Z rotations for additional flexibility
+    for i in range(num_qubits):
+        qc.rz(params[2*i + 1], i)
+    
+    # Third layer: Y rotations to enhance expressibility
+    for i in range(num_qubits):
+        qc.ry(params[2*i], i)
+    
+    # Final entangling layer for better correlation capture
+    for i in range(num_qubits - 1):
+        qc.cz(i, i + 1)
+    
+    return qc, params</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 2</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 0.9889</span>
+  <span>T 0.6031</span>
+  <span>R 0.6536</span>
+  <span>Total 0.7485</span>
+  <span>depth 7</span>
+  <span>params 36</span>
+  <span>size 58</span>
+</div>
+
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_expr_only_supplement_20260630_210326_split0_from_scratch_qwen_feedback/expr_only/prompts/qchem_lih_sto3g_1p68_round2.txt</div>
+  <a href='../assets/scratch_expr_only_qchem_lih_sto3g_1p68_r2_0bcbb88537e4.png'><img class='circuit' src='../assets/scratch_expr_only_qchem_lih_sto3g_1p68_r2_0bcbb88537e4.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # Optimized ansatz for LiH STO-3G with 12 qubits
+    # Balances expressibility, trainability, and reliability
+    
+    qc = QuantumCircuit(num_qubits)
+    # Use 3 parameters per qubit for good expressibility while keeping depth manageable
+    params = ParameterVector(&#x27;θ&#x27;, length=3 * num_qubits)
+    
+    # First layer: Y rotations for initial excitation
+    for i in range(num_qubits):
+        qc.ry(params[3*i], i)
+    
+    # Entangling layers with CZ gates in alternating pattern
+    for i in range(0, num_qubits - 1, 2):
+        qc.cz(i, i + 1)
+    
+    for i in range(1, num_qubits - 1, 2):
+        qc.cz(i, i + 1)
+    
+    # Second layer: Z rotations for additional flexibility
+    for i in range(num_qubits):
+        qc.rz(params[3*i + 1], i)
+    
+    # Third layer: Y rotations to enhance expressibility
+    for i in range(num_qubits):
+        qc.ry(params[3*i + 2], i)
+    
+    # Final entangling layer for better correlation capture
+    for i in range(0, num_qubits - 1, 2):
+        qc.cz(i, i + 1)
+    
+    for i in range(1, num_qubits - 1, 2):
+        qc.cz(i, i + 1)
+    
+    return qc, params</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 3</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 0.9781</span>
+  <span>T 0.6989</span>
+  <span>R 0.7940</span>
+  <span>Total 0.8237</span>
+  <span>depth 4</span>
+  <span>params 24</span>
+  <span>size 35</span>
+</div>
+
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_expr_only_supplement_20260630_210326_split0_from_scratch_qwen_feedback/expr_only/prompts/qchem_lih_sto3g_1p68_round3.txt</div>
+  <a href='../assets/scratch_expr_only_qchem_lih_sto3g_1p68_r3_209cc958e8cd.png'><img class='circuit' src='../assets/scratch_expr_only_qchem_lih_sto3g_1p68_r3_209cc958e8cd.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # Optimized ansatz for LiH STO-3G with 12 qubits
+    # Focuses on improving trainability (T) while maintaining high expressibility (E) and reliability (R)
+    # Uses a compact structure with alternating rotation types and reduced CZ depth
+    
+    qc = QuantumCircuit(num_qubits)
+    # Use 2 parameters per qubit to balance expressibility and trainability
+    params = ParameterVector(&#x27;θ&#x27;, length=2 * num_qubits)
+    
+    # First layer: Y rotations for initial excitation (better for molecular systems)
+    for i in range(num_qubits):
+        qc.ry(params[2*i], i)
+    
+    # Single entangling layer with alternating CZ pattern (reduced depth improves T and R)
+    for i in range(0, num_qubits - 1, 2):
+        qc.cz(i, i + 1)
+    
+    # Second layer: alternating Z and Y rotations to enhance expressibility without adding parameters
+    for i in range(num_qubits):
+        if i % 2 == 0:
+            qc.rz(params[2*i + 1], i)
+        else:
+            qc.ry(params[2*i + 1], i)
+    
+    # Final entangling layer with reduced connectivity (improves reliability)
+    for i in range(1, num_qubits - 1, 2):
+        qc.cz(i, i + 1)
     
     return qc, params</code></pre>
 </details>

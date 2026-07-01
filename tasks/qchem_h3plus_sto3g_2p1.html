@@ -80,6 +80,201 @@ def build_ansatz(num_qubits: int):
     return circuit, list(theta)</code></pre>
 </details>
 
+<h3>expr_only</h3>
+
+<details class="candidate" open>
+  <summary>Round 1</summary>
+  
+<div class="score incorrect">
+  <span class="pill">incorrect</span>
+  <span>E 0.0000</span>
+  <span>T 0.0000</span>
+  <span>R 0.0000</span>
+  <span>Total 0.0000</span>
+  <span>depth 67</span>
+  <span>params 56</span>
+  <span>size 98</span>
+</div>
+<div class='errors'>too many parameters: 56</div>
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_expr_only_supplement_20260630_210326_split1_reference_start_qwen3_feedback/expr_only/prompts/qchem_h3plus_sto3g_2p1_round1.txt</div>
+  <a href='../assets/ref_expr_only_qchem_h3plus_sto3g_2p1_r1_96d9368cab42.png'><img class='circuit' src='../assets/ref_expr_only_qchem_h3plus_sto3g_2p1_r1_96d9368cab42.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+HF_OCCUPIED = [0, 1]
+
+
+def build_ansatz(num_qubits: int):
+    reps = 2
+    # Use a more expressive ansatz with SU(2) blocks and alternating rotation axes
+    theta = ParameterVector(&quot;theta&quot;, length=3 * reps * num_qubits + 2 * reps * (num_qubits - 1))
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state
+    for q in HF_OCCUPIED:
+        circuit.x(q)
+    
+    k = 0
+    
+    for layer in range(reps):
+        # Single-qubit rotations with alternating axes for expressibility
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        
+        # Entangling layers with alternating CX directions for better connectivity
+        for q in range(num_qubits - 1):
+            circuit.cx(q, q + 1)
+            circuit.rz(theta[k], q + 1)
+            k += 1
+            circuit.cx(q, q + 1)
+        
+        if num_qubits &gt; 2:
+            for q in range(num_qubits - 2, -1, -1):
+                circuit.cx(q + 1, q)
+                circuit.rz(theta[k], q)
+                k += 1
+                circuit.cx(q + 1, q)
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 2</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 0.8975</span>
+  <span>T 0.3626</span>
+  <span>R 0.6150</span>
+  <span>Total 0.6250</span>
+  <span>depth 65</span>
+  <span>params 44</span>
+  <span>size 86</span>
+</div>
+
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_expr_only_supplement_20260630_210326_split1_reference_start_qwen3_feedback/expr_only/prompts/qchem_h3plus_sto3g_2p1_round2.txt</div>
+  <a href='../assets/ref_expr_only_qchem_h3plus_sto3g_2p1_r2_98d4276eb00a.png'><img class='circuit' src='../assets/ref_expr_only_qchem_h3plus_sto3g_2p1_r2_98d4276eb00a.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+HF_OCCUPIED = [0, 1]
+
+
+def build_ansatz(num_qubits: int):
+    reps = 2
+    # Use a compact but expressive ansatz with SU(2) blocks and alternating rotation axes
+    # Total parameters: 2 rotations per qubit per layer (ry, rz) + 1 entangling rotation per CX
+    theta = ParameterVector(&quot;theta&quot;, length=2 * reps * num_qubits + 2 * reps * (num_qubits - 1))
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state
+    for q in HF_OCCUPIED:
+        circuit.x(q)
+    
+    k = 0
+    
+    for layer in range(reps):
+        # Single-qubit rotations with alternating axes for expressibility
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        
+        # Entangling layers with alternating CX directions for better connectivity
+        for q in range(num_qubits - 1):
+            circuit.cx(q, q + 1)
+            circuit.rz(theta[k], q + 1)
+            k += 1
+            circuit.cx(q, q + 1)
+        
+        if num_qubits &gt; 2:
+            for q in range(num_qubits - 2, -1, -1):
+                circuit.cx(q + 1, q)
+                circuit.rz(theta[k], q)
+                k += 1
+                circuit.cx(q + 1, q)
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 3</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 0.9096</span>
+  <span>T 0.3385</span>
+  <span>R 0.6150</span>
+  <span>Total 0.6210</span>
+  <span>depth 65</span>
+  <span>params 44</span>
+  <span>size 86</span>
+</div>
+
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_expr_only_supplement_20260630_210326_split1_reference_start_qwen3_feedback/expr_only/prompts/qchem_h3plus_sto3g_2p1_round3.txt</div>
+  <a href='../assets/ref_expr_only_qchem_h3plus_sto3g_2p1_r3_1d27a4a9abf6.png'><img class='circuit' src='../assets/ref_expr_only_qchem_h3plus_sto3g_2p1_r3_1d27a4a9abf6.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+HF_OCCUPIED = [0, 1]
+
+
+def build_ansatz(num_qubits: int):
+    reps = 2
+    # Optimized ansatz: reduced parameter count while maintaining expressibility
+    # Total parameters: 2 ry/rz per qubit per layer + 1 rz per CX (2 per layer)
+    theta = ParameterVector(&quot;theta&quot;, length=2 * reps * num_qubits + 2 * reps * (num_qubits - 1))
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state
+    for q in HF_OCCUPIED:
+        circuit.x(q)
+    
+    k = 0
+    
+    for layer in range(reps):
+        # Single-qubit rotations with alternating axes for expressibility
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        
+        # Entangling layers with alternating CX directions
+        for q in range(num_qubits - 1):
+            circuit.cx(q, q + 1)
+            circuit.rz(theta[k], q + 1)
+            k += 1
+            circuit.cx(q, q + 1)
+        
+        if num_qubits &gt; 2:
+            for q in range(num_qubits - 2, -1, -1):
+                circuit.cx(q + 1, q)
+                circuit.rz(theta[k], q)
+                k += 1
+                circuit.cx(q + 1, q)
+    
+    return circuit, list(theta)</code></pre>
+</details>
+
 <h3>train_only</h3>
 
 <details class="candidate" open>
@@ -819,6 +1014,159 @@ def build_ansatz(num_qubits):
     qc.cx(1, 4)
     qc.cx(2, 5)
     qc.ry(-params</code></pre>
+</details>
+
+<h3>expr_only</h3>
+
+<details class="candidate" open>
+  <summary>Round 1</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 0.9372</span>
+  <span>T 0.3775</span>
+  <span>R 0.8568</span>
+  <span>Total 0.7239</span>
+  <span>depth 10</span>
+  <span>params 18</span>
+  <span>size 28</span>
+</div>
+
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_expr_only_supplement_20260630_210326_split1_from_scratch_qwen_feedback/expr_only/prompts/qchem_h3plus_sto3g_2p1_round1.txt</div>
+  <a href='../assets/scratch_expr_only_qchem_h3plus_sto3g_2p1_r1_8673153d6809.png'><img class='circuit' src='../assets/scratch_expr_only_qchem_h3plus_sto3g_2p1_r1_8673153d6809.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    qc = QuantumCircuit(num_qubits)
+    # Use 3 parameters per qubit for good expressibility without excessive depth
+    params = ParameterVector(&#x27;θ&#x27;, length=3 * num_qubits)
+    
+    # First layer: Ry rotations
+    for i in range(num_qubits):
+        qc.ry(params[3*i], i)
+    
+    # Entangling layer: CNOT chain
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+    
+    # Second layer: Rz and Ry rotations
+    for i in range(num_qubits):
+        qc.rz(params[3*i + 1], i)
+        qc.ry(params[3*i + 2], i)
+    
+    # Second entangling layer with shifted connectivity
+    for i in range(1, num_qubits - 1):
+        qc.cx(i, i + 1)
+    if num_qubits &gt; 2:
+        qc.cx(0, 1)
+    
+    return qc, params</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 2</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 0.9664</span>
+  <span>T 0.3541</span>
+  <span>R 0.8099</span>
+  <span>Total 0.7102</span>
+  <span>depth 16</span>
+  <span>params 24</span>
+  <span>size 39</span>
+</div>
+
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_expr_only_supplement_20260630_210326_split1_from_scratch_qwen_feedback/expr_only/prompts/qchem_h3plus_sto3g_2p1_round2.txt</div>
+  <a href='../assets/scratch_expr_only_qchem_h3plus_sto3g_2p1_r2_d14c58da44d7.png'><img class='circuit' src='../assets/scratch_expr_only_qchem_h3plus_sto3g_2p1_r2_d14c58da44d7.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    qc = QuantumCircuit(num_qubits)
+    # Use 4 parameters per qubit for improved expressibility while keeping depth manageable
+    params = ParameterVector(&#x27;θ&#x27;, length=4 * num_qubits)
+    
+    # First layer: Ry rotations for strong excitation character
+    for i in range(num_qubits):
+        qc.ry(params[4*i], i)
+    
+    # Entangling layer: CNOT chain with alternating control direction
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+    
+    # Second layer: Rz and Ry rotations
+    for i in range(num_qubits):
+        qc.rz(params[4*i + 1], i)
+        qc.ry(params[4*i + 2], i)
+    
+    # Second entangling layer with shifted connectivity for better correlation capture
+    for i in range(1, num_qubits - 1):
+        qc.cx(i, i + 1)
+    if num_qubits &gt; 2:
+        qc.cx(0, 1)
+    
+    # Third layer: additional rotations for expressibility
+    for i in range(num_qubits):
+        qc.rz(params[4*i + 3], i)
+    
+    # Third entangling layer with reversed connectivity pattern
+    for i in range(num_qubits - 2, -1, -1):
+        qc.cx(i + 1, i)
+    
+    return qc, params</code></pre>
+</details>
+
+
+<details class="candidate" open>
+  <summary>Round 3</summary>
+  
+<div class="score correct">
+  <span class="pill">correct</span>
+  <span>E 0.9488</span>
+  <span>T 0.3645</span>
+  <span>R 0.8568</span>
+  <span>Total 0.7234</span>
+  <span>depth 10</span>
+  <span>params 18</span>
+  <span>size 28</span>
+</div>
+
+
+  <div class='muted'>prompt: experiments/ansatz_optmization/results/qchem_expr_only_supplement_20260630_210326_split1_from_scratch_qwen_feedback/expr_only/prompts/qchem_h3plus_sto3g_2p1_round3.txt</div>
+  <a href='../assets/scratch_expr_only_qchem_h3plus_sto3g_2p1_r3_7cb55277865c.png'><img class='circuit' src='../assets/scratch_expr_only_qchem_h3plus_sto3g_2p1_r3_7cb55277865c.png' alt='circuit diagram'></a>
+  <pre class='code'><code>from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    qc = QuantumCircuit(num_qubits)
+    # Use 3 parameters per qubit to balance expressibility and trainability
+    params = ParameterVector(&#x27;θ&#x27;, length=3 * num_qubits)
+    
+    # First layer: Ry rotations for strong single-particle excitation character
+    for i in range(num_qubits):
+        qc.ry(params[3*i], i)
+    
+    # Entangling layer: CNOT chain with alternating direction for better correlation
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+    
+    # Second layer: Rz and Ry rotations
+    for i in range(num_qubits):
+        qc.rz(params[3*i + 1], i)
+        qc.ry(params[3*i + 2], i)
+    
+    # Second entangling layer with shifted connectivity for improved expressibility
+    for i in range(0, num_qubits - 1, 2):
+        qc.cx(i, i + 1)
+    for i in range(1, num_qubits - 1, 2):
+        qc.cx(i, i + 1)
+    
+    return qc, params</code></pre>
 </details>
 
 <h3>train_only</h3>
