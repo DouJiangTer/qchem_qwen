@@ -1,0 +1,286 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: OH-; basis: STO-3G; geometry/bondlength parameter: 0.5; qubits: 12.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -73.130049555087, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -73.129046299178.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # Build a UCCSD-like ansatz for OH- in STO-3G basis
+    # Using the reference ansatz structure from PennyLane qchem VQE benchmark
+    
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=12)
+    
+    # Reference ansatz parameters (12 parameters for OH- STO-3G)
+    # Based on the benchmark: 8 single excitations + 4 double excitations
+    
+    # Single excitations (8 parameters)
+    # Transpile to native gates: Ry and Rz
+    # Map to qubit indices based on spin-orbital ordering
+    
+    # Single excitations: (i, j) where i > j
+    # For OH- STO-3G: 8 occupied-virtual pairs
+    singles = [
+        (0, 8), (1, 9), (2, 10), (3, 11),  # α spin
+        (4, 8), (5, 9), (6, 10), (7, 11)   # β spin
+    ]
+    
+    # Double excitations: (i, j, k, l) where i > j, k > l, i > k
+    # For OH- STO-3G: 4 double excitations
+    doubles = [
+        (0, 1, 8, 9), (2, 3, 10, 11),  # αα and ββ
+        (0, 2, 8, 10), (1, 3, 9, 11)   # αβ
+    ]
+    
+    # Apply single excitations
+    for idx, (i, j) in enumerate(singles):
+        # Implement single excitation using 4 CNOTs and rotation
+        # Using the decomposition from arXiv:1704.05018
+        if i > j:
+            # Apply Ry(θ) on qubit i and Rz(-π/2) on qubit j for the excitation
+            # Standard implementation: controlled-Ry between i and j
+            
+            # Build the single excitation gate
+            if i == j + 1:
+                # Nearest neighbor: simpler decomposition
+                qc.cry(params[idx], j, i)
+            else:
+                # General case: use ladder of CNOTs
+                # Apply CNOT chain to transfer amplitude
+                for k in range(j+1, i):
+                    qc.cx(k, k+1)
+                qc.ry(params[idx], i)
+                qc.cx(j, i)
+                qc.ry(-params[idx]/2, i)
+                qc.cx(j, i)
+                qc.ry(params[idx]/2, i)
+                for k in reversed(range(j+1, i)):
+                    qc.cx(k, k+1)
+    
+    # Apply double excitations (4 parameters)
+    start_idx = len(singles)
+    for idx, (i, j, k, l) in enumerate(doubles):
+        param_idx = start_idx + idx
+        # Implement double excitation using 12 CNOTs and rotations
+        # Using the decomposition from arXiv:1704.05018
+        
+        # Sort qubits for proper ordering
+        qubits = sorted([i, j, k, l], reverse=True)
+        
+        # Standard double excitation implementation
+        # Apply CNOT chain to bring qubits together
+        # This is a simplified version for the specific qubit ordering
+        
+        # For OH- STO-3G, use the specific double excitation structure
+        # Implement using the 12-CNOT decomposition
+        
+        # First part: prepare the excitation
+        qc.cx(l, k)
+        qc.cx(k, j)
+        qc.cx(j, i)
+        
+        # Apply the rotation
+        qc.crx(params[param_idx], i, j)
+        qc.crx(params[param_idx], j, k)
+        qc.crx(params[param_idx], k, l)
+        
+        # Reverse the CNOT chain
+        qc.cx(j, i)
+        qc.cx(k, j)
+        qc.cx(l, k)
+        
+        # Additional controlled rotations for proper double excitation
+        # This is an approximation of the full double excitation gate
+        
+        # More accurate implementation using 12 CNOTs
+        # Reset and use proper decomposition
+        qc.cx(l, k)
+        qc.cx(k, j)
+        qc.cx(j, i)
+        
+        # Apply the main rotation
+        qc.ry(params[param_idx], i)
+        qc.cx(i, j)
+        qc.ry(-params[param_idx]/2, j)
+        qc.cx(i, j)
+        qc.ry(params[param_idx]/2, j)
+        
+        qc.cx(j, k)
+        qc.ry(-params[param_idx]/2, k)
+        qc.cx(j, k)
+        qc.ry(params[param_idx]/2, k)
+        
+        qc.cx(k, l)
+        qc.ry(-params[param_idx]/2, l)
+        qc.cx(k, l)
+        qc.ry(params[param_idx]/2, l)
+        
+        # Reverse the CNOT chain
+        qc.cx(j, i)
+        qc.cx(k, j)
+        qc.cx(l, k)
+    
+    # Adjust the ansatz to match the benchmark parameters exactly
+    # Rebuild with the correct parameter count and structure
+    
+    # Clear and rebuild with exact structure
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=12)
+    
+    # Build the ansatz using the standard UCCSD decomposition
+    # For OH- STO-3G: 8 singles + 4 doubles = 12 parameters
+    
+    # Single excitations
+    singles = [
+        (0, 8), (1, 9), (2, 10), (3, 11),
+        (4, 8), (5, 9), (6, 10), (7, 11)
+    ]
+    
+    for idx, (i, j) in enumerate(singles):
+        # Implement single excitation using the standard decomposition
+        # Using CNOTs and Ry rotations
+        
+        # Create the excitation circuit
+        if i > j:
+            # Apply CNOT chain
+            for k in range(j, i):
+                qc.cx(k, k+1)
+            
+            # Apply rotation
+            qc.ry(params[idx], i)
+            
+            # Apply controlled rotation
+            qc.cx(j, i)
+            qc.ry(-params[idx]/2, i)
+            qc.cx(j, i)
+            qc.ry(params[idx]/2, i)
+            
+            # Reverse CNOT chain
+            for k in range(i-1, j, -1):
+                qc.cx(k, k+1)
+    
+    # Double excitations
+    doubles = [
+        (0, 1, 8, 9), (2, 3, 10, 11),
+        (0, 2, 8, 
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=12)
+    
+    # OH- STO-3G UCCSD ansatz with 8 single and 4 double excitations
+    # Qubit ordering: spin-orbitals 0-3 (α occupied), 4-7 (β occupied),
+    #                 8-11 (virtual orbitals)
+    
+    # Single excitations: α and β excitations from occupied to virtual
+    singles = [
+        (0, 8), (1, 9), (2, 10), (3, 11),  # α spin
+        (4, 8), (5, 9), (6, 10), (7, 11)   # β spin
+    ]
+    
+    # Double excitations: αα, ββ, and αβ excitations
+    doubles = [
+        (0, 1, 8, 9),   # αα
+        (2, 3, 10, 11), # ββ
+        (0, 2, 8, 10),  # αβ
+        (1, 3, 9, 11)   # αβ
+    ]
+    
+    # Apply single excitations using standard decomposition (4 CNOTs each)
+    for idx, (i, j) in enumerate(singles):
+        # Create CNOT ladder from j to i
+        if i > j:
+            # Forward CNOT chain
+            for k in range(j, i):
+                qc.cx(k, k+1)
+            
+            # Apply rotation on target qubit
+            qc.ry(params[idx], i)
+            
+            # Controlled rotation for proper excitation
+            qc.cx(j, i)
+            qc.ry(-params[idx]/2, i)
+            qc.cx(j, i)
+            qc.ry(params[idx]/2, i)
+            
+            # Reverse CNOT chain
+            for k in range(i-1, j, -1):
+                qc.cx(k, k+1)
+    
+    # Apply double excitations using efficient decomposition (6 CNOTs each)
+    start_idx = len(singles)
+    for idx, (i, j, k, l) in enumerate(doubles):
+        param_idx = start_idx + idx
+        
+        # Sort qubits in descending order for standard decomposition
+        qubits = sorted([i, j, k, l], reverse=True)
+        i, j, k, l = qubits
+        
+        # Efficient double excitation decomposition (6 CNOTs)
+        # Based on arXiv:1905.10876
+        
+        # First CNOT chain to bring qubits together
+        qc.cx(l, k)
+        qc.cx(k, j)
+        qc.cx(j, i)
+        
+        # Apply controlled rotations
+        qc.ry(params[param_idx], i)
+        qc.cx(i, j)
+        qc.ry(-params[param_idx]/2, j)
+        qc.cx(i, j)
+        qc.ry(params[param_idx]/2, j)
+        
+        qc.cx(j, k)
+        qc.ry(-params[param_idx]/2, k)
+        qc.cx(j, k)
+        qc.ry(params[param_idx]/2, k)
+        
+        qc.cx(k, l)
+        qc.ry(-params[param_idx]/2, l)
+        qc.cx(k, l)
+        qc.ry(params[param_idx]/2, l)
+        
+        # Reverse CNOT chain
+        qc.cx(j, i)
+        qc.cx(k, j)
+        qc.cx(l, k)
+    
+    return qc, params
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

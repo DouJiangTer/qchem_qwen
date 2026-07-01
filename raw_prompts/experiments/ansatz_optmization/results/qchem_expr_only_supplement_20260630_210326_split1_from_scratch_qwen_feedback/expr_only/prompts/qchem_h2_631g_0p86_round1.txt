@@ -1,0 +1,73 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: H2; basis: 6-31G; geometry/bondlength parameter: 0.86; qubits: 8.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -1.145110940149, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -1.144300624351.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H2 in 6-31G basis with 8 qubits requires a specific ansatz
+    # Based on the benchmark, we implement the UCCSD ansatz truncated to singles and doubles
+    # For simplicity and compatibility with the given qubit count, we use a hardware-efficient
+    # ansatz that captures the essential correlations for H2
+    
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=8)
+    
+    # Prepare Hartree-Fock state (for H2, 2 electrons occupy the first two orbitals)
+    # In the 8-qubit representation, the occupied orbitals correspond to qubits 0 and 1
+    qc.x(0)
+    qc.x(1)
+    
+    # Add single and double excitations as parameterized gates
+    # Single excitation (spin-orbital 0 -> 2, 1 -> 3)
+    # Using the standard UCCSD implementation with controlled rotations
+    
+    # Double excitation between orbitals (0,1) -> (2,3)
+    # Implement using the standard decomposition into CNOTs and RY rotations
+    qc.cry(params[0], 0, 2)
+    qc.cry(params[1], 1, 3)
+    qc.cx(2, 0)
+    qc.cx(3, 1)
+    qc.cry(-params[0], 0, 2)
+    qc.cry(-params[1], 1, 3)
+    qc.cx(2, 0)
+    qc.cx(3, 1)
+    
+    # Additional single excitations for completeness
+    qc.ry(params[2], 0)
+    qc.ry(params[3], 1)
+    qc.ry(params[4], 2)
+    qc.ry(params[5], 3)
+    
+    # Add more parameters to match the expected ansatz expressiveness
+    qc.crx(params[6], 0, 1)
+    qc.crx(params[7], 2, 3)
+    
+    return qc, params
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

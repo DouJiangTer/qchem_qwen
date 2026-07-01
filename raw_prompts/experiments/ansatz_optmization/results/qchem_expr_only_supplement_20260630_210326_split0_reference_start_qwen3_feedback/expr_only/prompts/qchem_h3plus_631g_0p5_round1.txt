@@ -1,0 +1,56 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: H3+; basis: 6-31G; geometry/bondlength parameter: 0.5; qubits: 12.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -1.004566303289, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -1.003621211033.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 benchmark/reference candidate
+Feedback:
+Correctness: pass. Expressibility E: 0.992736. Hidden scores: T, R.
+Code:
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+
+HF_OCCUPIED = [0, 1]
+
+
+def build_ansatz(num_qubits: int):
+    reps = 2
+    theta = ParameterVector("theta", length=2 * reps * num_qubits)
+    circuit = QuantumCircuit(num_qubits)
+    for q in HF_OCCUPIED:
+        circuit.x(q)
+    k = 0
+    for layer in range(reps):
+        for q in range(num_qubits):
+            circuit.ry(theta[k], q)
+            k += 1
+        for q in range(num_qubits):
+            circuit.rz(theta[k], q)
+            k += 1
+        for q in range(num_qubits - 1):
+            circuit.cx(q, q + 1)
+        if num_qubits > 2:
+            for q in range(num_qubits - 2, -1, -1):
+                circuit.cx(q + 1, q)
+    return circuit, list(theta)
+
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

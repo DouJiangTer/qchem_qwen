@@ -1,0 +1,168 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: H5; basis: STO-3G; geometry/bondlength parameter: 0.8; qubits: 10.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -2.612916083026, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -2.612023487399.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H5 molecule in STO-3G basis with 10 qubits
+    # Build a UCCSD-like ansatz adapted for the molecular system
+    
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=20)
+    
+    # Hartree-Fock state preparation (occupied orbitals: 0,1,2,3,4 for 5 electrons)
+    # For H5 linear chain in STO-3G, we have 5 orbitals (10 qubits after Jordan-Wigner)
+    # Occupied orbitals in HF state: 0,1,2,3,4 (5 electrons)
+    
+    # Apply X gates to prepare initial HF state
+    for i in range(5):
+        qc.x(i)
+    
+    # Add single and double excitation operators
+    # Single excitations: (i,a) where i occupied, a virtual
+    # Double excitations: (i,j,a,b) where i,j occupied, a,b virtual
+    
+    # Single excitations for H5 (10 qubits, 5 occupied, 5 virtual)
+    # i=0->a=5, i=1->a=6, i=2->a=7, i=3->a=8, i=4->a=9
+    for idx, (i, a) in enumerate([(0,5), (1,6), (2,7), (3,8), (4,9)]):
+        # Implement single excitation using 4 parameters per excitation
+        # Using the standard UCCSD implementation pattern
+        
+        # Parameter indices for this excitation
+        theta_idx = idx * 2
+        phi_idx = idx * 2 + 1
+        
+        # Implement single excitation gate
+        # Using the decomposition: RY(θ) on target, CNOTs, and phase rotations
+        
+        # First part: create superposition between occupied and virtual orbitals
+        qc.ry(params[theta_idx], i)
+        qc.ry(params[phi_idx], a)
+        
+        # CNOT chain to implement fermionic anticommutation
+        target = a
+        for j in range(i+1, a):
+            qc.cx(j, target)
+            target = j
+        
+        # Z-rotation for the excitation
+        qc.rz(params[theta_idx], a)
+        
+        # Reverse CNOT chain
+        target = a
+        for j in range(a-1, i, -1):
+            qc.cx(j, target)
+            target = j
+    
+    # Double excitations - simplified for H5
+    # Only include the most significant double excitation: (0,1)->(8,9)
+    # Using 2 parameters for this double excitation
+    double_params = params[10:12]
+    
+    # Implement double excitation between orbitals 0,1 and 8,9
+    i, j, a, b = 0, 1, 8, 9
+    
+    # Standard UCCSD double excitation implementation
+    # This is a simplified version using the known structure for this molecule
+    
+    # First single excitation: 0->8
+    qc.ry(double_params[0], 0)
+    qc.ry(double_params[0], 8)
+    
+    # CNOT chain for anticommutation
+    for k in range(1, 8):
+        qc.cx(k, 8)
+    
+    # Second single excitation: 1->9 (with controlled rotation)
+    qc.cry(double_params[1], 8, 9)
+    
+    # Reverse CNOT chain
+    for k in range(7, 0, -1):
+        qc.cx(k, 8)
+    
+    # Additional corrections for proper fermionic anticommutation
+    # This is a simplified ansatz that captures the essential physics
+    
+    return qc, params
+```
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H5 molecule in STO-3G basis with 10 qubits
+    # Build a hardware-efficient ansatz inspired by UCCSD but adapted for stability
+    
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=20)
+    
+    # Prepare Hartree-Fock state: 5 electrons occupy orbitals 0-4 (spin-up)
+    # In Jordan-Wigner representation for STO-3G H5: qubits 0-4 are spin-up occupied,
+    # qubits 5-9 are spin-down virtual orbitals
+    for i in range(5):
+        qc.x(i)
+    
+    # Add parameterized gates in alternating pattern for expressibility
+    # Layer 1: Parameterized rotations
+    for i in range(num_qubits):
+        qc.ry(params[i], i)
+        qc.rz(params[i + num_qubits], i)
+    
+    # Layer 2: Entangling CNOTs in a nearest-neighbor pattern
+    for i in range(0, num_qubits - 1, 2):
+        qc.cx(i, i + 1)
+    for i in range(1, num_qubits - 1, 2):
+        qc.cx(i, i + 1)
+    
+    # Layer 3: Additional parameterized rotations for expressibility
+    for i in range(num_qubits):
+        qc.ry(params[i + 2 * num_qubits], i)
+        qc.rz(params[i + 3 * num_qubits], i)
+    
+    # Layer 4: Second entangling layer with different connectivity
+    for i in range(0, num_qubits - 1, 2):
+        qc.cx(i + 1, i)
+    for i in range(1, num_qubits - 1, 2):
+        qc.cx(i + 1, i)
+    
+    # Layer 5: Final parameterized rotations for fine-tuning
+    for i in range(num_qubits):
+        qc.ry(params[i + 4 * num_qubits], i)
+        qc.rz(params[i + 5 * num_qubits], i)
+    
+    return qc, params
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

@@ -1,0 +1,180 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: H6; basis: STO-3G; geometry/bondlength parameter: 0.76; qubits: 12.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -3.167125845174, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -3.166212554830.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H6 STO-3G VQE ansatz based on UCCSD-like structure with parameterized rotations
+    # Using a hardware-efficient ansatz with Ry and Rz rotations and CNOT entanglers
+    # Designed to approximate the FCI wavefunction for H6
+    
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=3 * num_qubits)
+    
+    # Initialize Hartree-Fock state (for H6 in STO-3G, electrons fill lowest orbitals)
+    # H6 has 6 electrons, so 6 qubits are occupied in the spin-orbital picture (12 qubits total)
+    # HF state: |111111000000⟩
+    for i in range(6):
+        qc.x(i)
+    
+    # Add parameterized single and double excitation-like layers
+    # Layer 1: Single excitations (Ry rotations on occupied-virtual pairs)
+    for i in range(6):  # occupied orbitals (0-5)
+        for j in range(6, 12):  # virtual orbitals (6-11)
+            if (j - i) % 2 == 0:  # select specific pairs for efficiency
+                idx = (i, j)
+                param_idx = (i * (12 - i) + j - i - 1) % len(params)
+                qc.ry(params[param_idx], idx[0])
+                qc.ry(-params[param_idx], idx[1])
+                qc.cx(idx[0], idx[1])
+    
+    # Layer 2: Parameterized single qubit rotations for flexibility
+    for i in range(num_qubits):
+        qc.rz(params[6 + i], i)
+        qc.ry(params[12 + i], i)
+        qc.rz(params[18 + i], i)
+    
+    # Layer 3: Entangling block with CNOTs and parameterized rotations
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+        qc.ry(params[24 + i], i + 1)
+    
+    # Final layer of parameterized rotations
+    for i in range(num_qubits):
+        qc.rz(params[30 + i], i)
+    
+    return qc, params
+```
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # Corrected ansatz for H6 STO-3G VQE task
+    # Uses 12 qubits, includes HF state preparation and parameterized excitations
+    # Designed to be correct, expressive, trainability-friendly, and transpile-efficient
+    
+    qc = QuantumCircuit(num_qubits)
+    # Use 18 parameters: 6 for single excitations + 12 for local rotations
+    params = ParameterVector('θ', length=18)
+    
+    # Initialize Hartree-Fock state: |111111000000⟩ for 6 electrons in 12 spin-orbitals
+    for i in range(6):
+        qc.x(i)
+    
+    # Layer 1: Parameterized single excitations (simulating UCCSD-like structure)
+    # Connect occupied (0-5) and virtual (6-11) orbitals with even index differences
+    excitation_pairs = [(0,6), (1,7), (2,8), (3,9), (4,10), (5,11)]
+    for i, (occ, virt) in enumerate(excitation_pairs):
+        qc.ry(params[i], occ)
+        qc.ry(-params[i], virt)
+        qc.cx(occ, virt)
+    
+    # Layer 2: Local parameterized rotations for expressibility and trainability
+    # Use rz-ry-rz sequence for full SU(2) coverage
+    for i in range(num_qubits):
+        qc.rz(params[6 + i], i)
+        qc.ry(params[6 + i], i)  # Use same parameter for efficiency
+        qc.rz(params[6 + i], i)
+    
+    # Layer 3: Efficient entangling with nearest-neighbor CNOTs
+    # Use a reduced parameter set to avoid excessive depth
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+        qc.ry(params[12], i + 1)  # Shared parameter for efficiency
+    
+    # Final parameterized rotation layer
+    for i in range(num_qubits):
+        qc.rz(params[13], i)
+        qc.ry(params[14], i)
+        qc.rz(params[15], i)
+    
+    # Add two more parameters for fine-tuning
+    qc.rz(params[16], 0)
+    qc.rz(params[17], 11)
+    
+    return qc, params
+```
+```
+
+Round 2 Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # Correct ansatz for H6 STO-3G VQE task with 12 qubits
+    # Designed to be correct, expressive, trainability-friendly, and transpile-efficient
+    
+    qc = QuantumCircuit(num_qubits)
+    # Use 24 parameters: 6 for single excitations + 18 for local rotations (3 per qubit)
+    params = ParameterVector('θ', length=24)
+    
+    # Initialize Hartree-Fock state: |111111000000⟩ for 6 electrons in 12 spin-orbitals
+    for i in range(6):
+        qc.x(i)
+    
+    # Layer 1: Parameterized single excitations (simulating UCCSD-like structure)
+    # Connect occupied (0-5) and virtual (6-11) orbitals with even index differences
+    excitation_pairs = [(0,6), (1,7), (2,8), (3,9), (4,10), (5,11)]
+    for i, (occ, virt) in enumerate(excitation_pairs):
+        qc.ry(params[i], occ)
+        qc.ry(-params[i], virt)
+        qc.cx(occ, virt)
+    
+    # Layer 2: Local parameterized rotations for expressibility and trainability
+    # Use rz-ry-rz sequence for full SU(2) coverage with distinct parameters
+    for i in range(num_qubits):
+        qc.rz(params[6 + 3*i], i)
+        qc.ry(params[7 + 3*i], i)
+        qc.rz(params[8 + 3*i], i)
+    
+    # Layer 3: Efficient entangling with nearest-neighbor CNOTs in a ladder pattern
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+        qc.ry(params[18 + i % 6], i + 1)  # Cycle through 6 parameters for variety
+    
+    # Final parameterized rotation layer
+    for i in range(num_qubits):
+        qc.rz(params[24 - num_qubits + i], i)
+    
+    return qc, params
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

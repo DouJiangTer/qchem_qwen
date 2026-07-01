@@ -1,0 +1,176 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: H2; basis: STO-3G; geometry/bondlength parameter: 1.26; qubits: 4.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -1.043630671391, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -1.042915492868.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: pass. Expressibility E: 0.031968. Hidden scores: T, R.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H2 in STO-3G basis with 4 qubits
+    # Use UCCSD ansatz with single and double excitations
+    # Map to qubits using Jordan-Wigner transformation
+    
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for single and double excitations
+    # For H2 STO-3G: 1 single excitation (from orbital 0 to 2) and 
+    # 1 double excitation (from orbitals 0,1 to 2,3)
+    theta_s = ParameterVector('theta_s', 1)
+    theta_d = ParameterVector('theta_d', 1)
+    
+    # Prepare Hartree-Fock state: electrons in orbitals 0 and 1 (spin-orbitals 0,1)
+    qc.x(0)
+    qc.x(1)
+    
+    # Single excitation: create |1001> from |1100>
+    # Map: orbital 0 -> spin-orbital 0,2; orbital 1 -> spin-orbital 1,3
+    # Single excitation from orbital 0 to 2: spin-orbital 0->2 and 1->3 (but 1->3 is blocked)
+    # Actually for H2: single excitation is from orbital 0 to orbital 2 (spin-orbital 0->2)
+    # Apply to qubits 0 and 2 (spin-up orbitals)
+    # Use the standard UCCSD implementation for 2 electrons in 4 spin-orbitals
+    
+    # Double excitation: from orbitals 0,1 to 2,3 (spin-orbitals 0,1 -> 2,3)
+    # This is the dominant correlation effect for H2
+    # Implement using 4-qubit double excitation gate
+    
+    # For double excitation (0,1 -> 2,3):
+    # Apply RY(π/2) to qubit 1 to create superposition
+    # Then apply controlled operations
+    
+    # Standard implementation of double excitation for 4 qubits
+    # Based on arXiv:1805.04340
+    
+    # First apply RY(π/2) to qubit 1
+    qc.ry(-3.141592653589793/2, 1)
+    
+    # Apply controlled-Z chain
+    qc.cx(1, 0)
+    qc.cx(0, 2)
+    qc.cx(2, 3)
+    
+    # Apply RZ(theta_d[0]) to qubit 3
+    qc.rz(theta_d[0], 3)
+    
+    # Reverse the CNOT chain
+    qc.cx(2, 3)
+    qc.cx(0, 2)
+    qc.cx(1, 0)
+    
+    # Apply RY(-π/2) to qubit 1
+    qc.ry(3.141592653589793/2, 1)
+    
+    # Single excitation: from orbital 0 to orbital 2 (spin-orbital 0 to 2)
+    # This requires 2-qubit excitation: |10> -> |01> on qubits 0,2
+    # Apply RY(π/2) to qubit 0
+    qc.ry(-3.141592653589793/2, 0)
+    
+    # Controlled-Z between qubits 0 and 2
+    qc.cx(0, 2)
+    
+    # Apply RZ(theta_s[0]) to qubit 2
+    qc.rz(theta_s[0], 2)
+    
+    # Reverse CNOT
+    qc.cx(0, 2)
+    
+    # Apply RY(-π/2) to qubit 0
+    qc.ry(3.141592653589793/2, 0)
+    
+    # Combine parameters into single list
+    params = list(theta_s) + list(theta_d)
+    
+    return qc, params
+```
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: pass. Expressibility E: 0.037817. Hidden scores: T, R.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H2 in STO-3G basis with 4 qubits
+    # Use a simplified but effective UCCSD-inspired ansatz
+    # Based on the standard double excitation with single excitation corrections
+    
+    qc = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state: electrons in orbitals 0 and 1 (spin-orbitals 0,1)
+    qc.x(0)
+    qc.x(1)
+    
+    # Create parameter vectors
+    # One parameter for the double excitation (dominant correlation effect)
+    # One parameter for the single excitation (correction)
+    theta_d = ParameterVector('theta_d', 1)
+    theta_s = ParameterVector('theta_s', 1)
+    
+    # Double excitation (0,1 -> 2,3) using the standard 4-qubit implementation
+    # Based on arXiv:1805.04340, optimized for fewer gates
+    
+    # First layer: prepare for double excitation
+    qc.ry(-3.141592653589793/2, 1)
+    qc.cx(1, 0)
+    qc.cx(0, 2)
+    qc.cx(2, 3)
+    
+    # Apply RZ(theta_d[0]) to qubit 3
+    qc.rz(theta_d[0], 3)
+    
+    # Reverse the CNOT chain
+    qc.cx(2, 3)
+    qc.cx(0, 2)
+    qc.cx(1, 0)
+    
+    qc.ry(3.141592653589793/2, 1)
+    
+    # Single excitation (0 -> 2) - simpler implementation
+    # Apply RY(π/2) to qubit 0
+    qc.ry(-3.141592653589793/2, 0)
+    
+    # Controlled-Z between qubits 0 and 2
+    qc.cx(0, 2)
+    
+    # Apply RZ(theta_s[0]) to qubit 2
+    qc.rz(theta_s[0], 2)
+    
+    # Reverse CNOT
+    qc.cx(0, 2)
+    
+    # Apply RY(-π/2) to qubit 0
+    qc.ry(3.141592653589793/2, 0)
+    
+    # Combine parameters into single list
+    params = list(theta_d) + list(theta_s)
+    
+    return qc, params
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

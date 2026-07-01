@@ -1,0 +1,262 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: H2; basis: 6-31G; geometry/bondlength parameter: 2.1; qubits: 8.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -1.010095922325, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -1.009820031349.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H2 in 6-31G basis with bond length 2.1 uses 8 qubits after qubit reduction
+    # Use a chemistry-inspired ansatz: UCCSD-like structure with single and double excitations
+    # Simplified to fit within 8 qubits while preserving molecular symmetry
+    
+    qc = QuantumCircuit(num_qubits)
+    
+    # Parameters for single and double excitations
+    # For H2, we need parameters for excitations from occupied to virtual orbitals
+    # With 8 qubits, we have 4 spin orbitals (2 spatial orbitals * 2 spins)
+    # Occupied: 2 electrons -> 2 spin orbitals filled (spin up and down of 1s)
+    # Virtual: 2 spin orbitals (spin up and down of 2s)
+    
+    # Create parameter vectors for single and double excitations
+    # Single excitations: 2 (spin up from occ to virt, spin down from occ to virt)
+    # Double excitations: 1 (both spins excited together)
+    n_single = 2
+    n_double = 1
+    
+    theta_single = ParameterVector('theta_s', n_single)
+    theta_double = ParameterVector('theta_d', n_double)
+    
+    # Prepare Hartree-Fock state: electrons in lowest energy orbitals
+    # For H2 in minimal basis, we put 2 electrons in the 1s orbital (spin up and down)
+    # In 8-qubit representation, we assume qubit 0 and 1 correspond to spin-up and spin-down of 1s orbital
+    qc.x(0)  # Spin up electron
+    qc.x(1)  # Spin down electron
+    
+    # Single excitations: move one electron from occupied to virtual orbital
+    # Qubit mapping: 0,1 = occupied (1s), 2,3 = virtual (2s) - simplified mapping
+    # For 8 qubits, we might have more orbitals, but for H2 we only need active space of 2 orbitals
+    # Assuming qubits 0,1,2,3 represent the active space, others are frozen
+    
+    # Single excitation 1: spin-up electron from orbital 0 to orbital 2
+    if num_qubits >= 4:
+        # Implement single excitation using Givens rotation (ansatz from quantum chemistry)
+        # Use the generalized ansatz from arXiv:1805.03469
+        # For single excitation: apply rotation between qubits i and j
+        qc.ry(theta_single[0], 0)
+        qc.ry(-theta_single[0], 2)
+        qc.cnot(0, 1)
+        qc.cnot(2, 3)
+        qc.cnot(0, 2)
+        qc.cnot(1, 3)
+        
+        # Single excitation 2: spin-down electron from orbital 1 to orbital 3
+        qc.ry(theta_single[1], 1)
+        qc.ry(-theta_single[1], 3)
+        qc.cnot(1, 0)
+        qc.cnot(3, 2)
+        qc.cnot(1, 3)
+        qc.cnot(0, 2)
+    
+    # Double excitation: both electrons excited from 1s to 2s simultaneously
+    # This is the most important correlation effect for H2
+    if num_qubits >= 4:
+        # Double excitation ansatz using 2-qubit rotations
+        # Implement the double excitation circuit from arXiv:1805.03469
+        qc.ry(theta_double[0], 0)
+        qc.ry(theta_double[0], 1)
+        qc.ry(-theta_double[0], 2)
+        qc.ry(-theta_double[0], 3)
+        qc.cnot(0, 1)
+        qc.cnot(2, 3)
+        qc.cnot(0, 2)
+        qc.cnot(1, 3)
+        qc.cnot(0, 1)
+        qc.cnot(2, 3)
+    
+    # For 8 qubits, we might need to include more orbitals if the basis set is larger
+    # But for H2 in 6-31G, the active space is typically 2 orbitals (4 spin orbitals)
+    # The remaining qubits (4-7) would be for higher orbitals that are unoccupied in HF state
+    # We can add additional parameters if needed, but the core chemistry is captured above
+    
+    # Combine all parameters
+    parameters = list(theta_single) + list(theta_double)
+    
+    return qc, parameters
+```
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: pass. Expressibility E: 0.719765. Hidden scores: T, R.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H2 in 6-31G basis with 8 qubits - use a chemistry-inspired ansatz
+    # Based on the reference PennyLane implementation, implement a modified UCCSD
+    # that works with the 8-qubit representation while maintaining correctness
+    
+    qc = QuantumCircuit(num_qubits)
+    
+    # Hartree-Fock state preparation: for H2, 2 electrons occupy the lowest orbitals
+    # In the 8-qubit representation, we assume qubits 0 and 1 correspond to the occupied orbitals
+    qc.x(0)
+    qc.x(1)
+    
+    # Create parameter vectors for single and double excitations
+    # For H2 in active space of 2 orbitals (4 spin orbitals), we have:
+    # - 2 single excitations (spin-up and spin-down)
+    # - 1 double excitation (both spins)
+    n_single = 2
+    n_double = 1
+    
+    theta_single = ParameterVector('theta_s', n_single)
+    theta_double = ParameterVector('theta_d', n_double)
+    
+    # Implement single excitations using the ansatz from arXiv:1805.03469
+    # Single excitation 1: spin-up electron from orbital 0 to orbital 2
+    if num_qubits >= 4:
+        # Use the standard single excitation circuit
+        qc.ry(theta_single[0], 0)
+        qc.ry(-theta_single[0], 2)
+        qc.cx(0, 1)
+        qc.cx(2, 3)
+        qc.cx(0, 2)
+        qc.cx(1, 3)
+    
+    # Single excitation 2: spin-down electron from orbital 1 to orbital 3
+    if num_qubits >= 4:
+        qc.ry(theta_single[1], 1)
+        qc.ry(-theta_single[1], 3)
+        qc.cx(1, 0)
+        qc.cx(3, 2)
+        qc.cx(1, 3)
+        qc.cx(0, 2)
+    
+    # Double excitation: both electrons excited simultaneously
+    if num_qubits >= 4:
+        # Implement the double excitation circuit from arXiv:1805.03469
+        qc.ry(theta_double[0], 0)
+        qc.ry(theta_double[0], 1)
+        qc.ry(-theta_double[0], 2)
+        qc.ry(-theta_double[0], 3)
+        qc.cx(0, 1)
+        qc.cx(2, 3)
+        qc.cx(0, 2)
+        qc.cx(1, 3)
+        qc.cx(0, 1)
+        qc.cx(2, 3)
+    
+    # For 8 qubits, add additional rotations on unused qubits to ensure parameter coverage
+    # This helps with expressibility while maintaining correctness
+    if num_qubits > 4:
+        extra_params = ParameterVector('theta_extra', num_qubits - 4)
+        for i in range(4, num_qubits):
+            qc.ry(extra_params[i-4], i)
+        parameters = list(theta_single) + list(theta_double) + list(extra_params)
+    else:
+        parameters = list(theta_single) + list(theta_double)
+    
+    return qc, parameters
+```
+```
+
+Round 2 Qwen candidate
+Feedback:
+Correctness: pass. Expressibility E: 0.000157. Hidden scores: T, R.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H2 in 6-31G basis with 8 qubits - optimized ansatz for VQE
+    # Based on UCCSD but simplified for better trainability and expressibility
+    
+    qc = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state: 2 electrons in lowest orbitals (qubits 0, 1)
+    qc.x(0)
+    qc.x(1)
+    
+    # Create parameter vectors - reduced parameter count for better trainability
+    # Single excitations: 2 parameters (spin-up and spin-down)
+    # Double excitations: 1 parameter (correlation effect)
+    n_single = 2
+    n_double = 1
+    
+    theta_single = ParameterVector('theta_s', n_single)
+    theta_double = ParameterVector('theta_d', n_double)
+    
+    # Implement single excitations using optimized Givens rotation structure
+    # Single excitation 1: spin-up from orbital 0 to orbital 2
+    if num_qubits >= 4:
+        qc.ry(theta_single[0], 0)
+        qc.ry(-theta_single[0], 2)
+        qc.cx(0, 1)
+        qc.cx(2, 3)
+        qc.cx(0, 2)
+        qc.cx(1, 3)
+    
+    # Single excitation 2: spin-down from orbital 1 to orbital 3
+    if num_qubits >= 4:
+        qc.ry(theta_single[1], 1)
+        qc.ry(-theta_single[1], 3)
+        qc.cx(1, 0)
+        qc.cx(3, 2)
+        qc.cx(1, 3)
+        qc.cx(0, 2)
+    
+    # Double excitation: optimized structure for better expressibility
+    if num_qubits >= 4:
+        # Use the double excitation circuit with reduced CNOT count
+        qc.ry(theta_double[0], 0)
+        qc.ry(theta_double[0], 1)
+        qc.ry(-theta_double[0], 2)
+        qc.ry(-theta_double[0], 3)
+        qc.cx(0, 1)
+        qc.cx(2, 3)
+        qc.cx(0, 2)
+        qc.cx(1, 3)
+    
+    # Add single-qubit rotations on all qubits for improved expressibility
+    # This helps with barren plateau issues while maintaining trainability
+    extra_params = ParameterVector('theta_extra', num_qubits)
+    for i in range(num_qubits):
+        qc.rz(extra_params[i], i)
+    
+    # Combine all parameters
+    parameters = list(theta_single) + list(theta_double) + list(extra_params)
+    
+    return qc, parameters
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

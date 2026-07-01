@@ -1,0 +1,126 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: H2; basis: 6-31G; geometry/bondlength parameter: 2.1; qubits: 8.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -1.010095922325, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -1.009820031349.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H2 in 6-31G basis with bond length 2.1 bohr uses 8 qubits
+    # Build a chemically motivated UCCSD-like ansatz with single and double excitations
+    # For simplicity, use a truncated version of the ansatz that captures essential correlations
+    
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for single and double excitations
+    # For H2, we need parameters for excitations from occupied to virtual orbitals
+    # With 8 qubits, we have 4 spatial orbitals (2 occupied, 2 virtual in minimal active space)
+    
+    # Single excitation parameters (theta_i)
+    n_singles = 2  # Number of single excitation amplitudes for H2
+    theta = ParameterVector('theta', n_singles)
+    
+    # Double excitation parameters (phi_j)
+    n_doubles = 1  # Number of double excitation amplitudes for H2
+    phi = ParameterVector('phi', n_doubles)
+    
+    # Reference Hartree-Fock state: electrons occupy lowest orbitals
+    # For H2 with 2 electrons in 4 orbitals (8 qubits after Jordan-Wigner), 
+    # HF state is |11000000⟩ (spin-orbitals 0 and 1 occupied)
+    
+    # Apply single excitations: e^{theta (a^+ a - a^+ a)} -> RY and RZ gates
+    # For H2, typical single excitations: 0->4, 1->5 (spin-orbitals)
+    # Apply to qubits 0 and 4, 1 and 5
+    
+    # Single excitation 0->4
+    qc.ry(theta[0], 0)
+    qc.ry(-theta[0], 4)
+    qc.cz(0, 4)
+    qc.ry(theta[0], 0)
+    qc.ry(-theta[0], 4)
+    qc.cz(0, 4)
+    
+    # Single excitation 1->5
+    qc.ry(theta[1], 1)
+    qc.ry(-theta[1], 5)
+    qc.cz(1, 5)
+    qc.ry(theta[1], 1)
+    qc.ry(-theta[1], 5)
+    qc.cz(1, 5)
+    
+    # Double excitation: 0,1 -> 4,5 (simultaneous excitation)
+    # Implement using 4-qubit double excitation gate decomposition
+    # Using the standard decomposition with 6 CNOTs and rotation gates
+    
+    # Double excitation on qubits 0,1,4,5
+    qc.h(0)
+    qc.h(1)
+    qc.h(4)
+    qc.h(5)
+    
+    qc.cx(0, 1)
+    qc.cx(4, 5)
+    qc.cx(1, 4)
+    
+    qc.rz(phi[0], 1)
+    qc.rz(phi[0], 4)
+    
+    qc.cx(1, 4)
+    qc.cx(0, 1)
+    qc.cx(4, 5)
+    
+    qc.h(0)
+    qc.h(1)
+    qc.h(4)
+    qc.h(5)
+    
+    # Add additional layers for better convergence (as in benchmark ansatz)
+    # Add another set of single excitations with different parameters
+    theta2 = ParameterVector('theta2', n_singles)
+    
+    # Single excitation 0->4 (second layer)
+    qc.ry(theta2[0], 0)
+    qc.ry(-theta2[0], 4)
+    qc.cz(0, 4)
+    qc.ry(theta2[0], 0)
+    qc.ry(-theta2[0], 4)
+    qc.cz(0, 4)
+    
+    # Single excitation 1->5 (second layer)
+    qc.ry(theta2[1], 1)
+    qc.ry(-theta2[1], 5)
+    qc.cz(1, 5)
+    qc.ry(theta2[1], 1)
+    qc.ry(-theta2[1], 5)
+    qc.cz(1, 5)
+    
+    # Collect all parameters
+    parameters = list(theta) + list(phi) + list(theta2)
+    
+    return qc, parameters
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

@@ -1,0 +1,283 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: H3+; basis: STO-3G; geometry/bondlength parameter: 0.5; qubits: 6.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -0.741096446723, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -0.740385922916.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H3+ in STO-3G basis with 6 qubits
+    # Use a chemically motivated ansatz based on the UCCSD-like structure
+    # but adapted for the limited qubit count and known molecular symmetries
+    
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=12)
+    
+    # Prepare Hartree-Fock state: electrons occupy the lowest energy orbitals
+    # For H3+ in STO-3G: 2 electrons fill the 1σg orbital (spin-up and spin-down)
+    # Mapping: spin-orbitals are ordered as α0, β0, α1, β1, α2, β2
+    # HF state: α0 and β0 occupied → qubits 0 and 1 set to |1⟩
+    qc.x(0)
+    qc.x(1)
+    
+    # Add single and double excitation operators
+    # Single excitations: (i ↔ a) where i is occupied, a is virtual
+    # Double excitations: (i,j ↔ a,b) where i,j occupied, a,b virtual
+    
+    # Single excitations for H3+ (occupied: 0,1; virtual: 2,3,4,5)
+    # θ0: 0 ↔ 2
+    qc.ry(params[0], 2)
+    qc.cnot(0, 2)
+    qc.ry(-params[0], 2)
+    qc.cnot(0, 2)
+    
+    # θ1: 1 ↔ 3
+    qc.ry(params[1], 3)
+    qc.cnot(1, 3)
+    qc.ry(-params[1], 3)
+    qc.cnot(1, 3)
+    
+    # θ2: 0 ↔ 4
+    qc.ry(params[2], 4)
+    qc.cnot(0, 4)
+    qc.ry(-params[2], 4)
+    qc.cnot(0, 4)
+    
+    # θ3: 1 ↔ 5
+    qc.ry(params[3], 5)
+    qc.cnot(1, 5)
+    qc.ry(-params[3], 5)
+    qc.cnot(1, 5)
+    
+    # Double excitations (most important for molecular systems)
+    # θ4: 0,1 ↔ 2,3
+    qc.cnot(0, 2)
+    qc.cnot(1, 3)
+    qc.ry(params[4], 3)
+    qc.cnot(2, 3)
+    qc.ry(-params[4], 3)
+    qc.cnot(2, 3)
+    qc.cnot(1, 3)
+    qc.cnot(0, 2)
+    
+    # θ5: 0,1 ↔ 2,4
+    qc.cnot(0, 2)
+    qc.cnot(1, 4)
+    qc.ry(params[5], 4)
+    qc.cnot(2, 4)
+    qc.ry(-params[5], 4)
+    qc.cnot(2, 4)
+    qc.cnot(1, 4)
+    qc.cnot(0, 2)
+    
+    # θ6: 0,1 ↔ 2,5
+    qc.cnot(0, 2)
+    qc.cnot(1, 5)
+    qc.ry(params[6], 5)
+    qc.cnot(2, 5)
+    qc.ry(-params[6], 5)
+    qc.cnot(2, 5)
+    qc.cnot(1, 5)
+    qc.cnot(0, 2)
+    
+    # θ7: 0,1 ↔ 3,4
+    qc.cnot(0, 3)
+    qc.cnot(1, 4)
+    qc.ry(params[7], 4)
+    qc.cnot(3, 4)
+    qc.ry(-params[7], 4)
+    qc.cnot(3, 4)
+    qc.cnot(1, 4)
+    qc.cnot(0, 3)
+    
+    # θ8: 0,1 ↔ 3,5
+    qc.cnot(0, 3)
+    qc.cnot(1, 5)
+    qc.ry(params[8], 5)
+    qc.cnot(3, 5)
+    qc.ry(-params[8], 5)
+    qc.cnot(3, 5)
+    qc.cnot(1, 5)
+    qc.cnot(0, 3)
+    
+    # θ9: 0,1 ↔ 4,5
+    qc.cnot(0, 4)
+    qc.cnot(1, 5)
+    qc.ry(params[9], 5)
+    qc.cnot(4, 5)
+    qc.ry(-params[9], 5)
+    qc.cnot(4, 5)
+    qc.cnot(1, 5)
+    qc.cnot(0, 4)
+    
+    # Additional single excitations for better convergence
+    # θ10: 0 ↔ 3
+    qc.ry(params[10], 3)
+    qc.cnot(0, 3)
+    qc.ry(-params[10], 3)
+    qc.cnot(0, 3)
+    
+    # θ11: 1 ↔ 2
+    qc.ry(params[11], 2)
+    qc.cnot(1, 2)
+    qc.ry(-params[11], 2)
+    qc.cnot(1, 2)
+    
+    return qc, params
+```
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: pass. Expressibility E: 0.159874. Hidden scores: T, R.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H3+ in STO-3G basis with 6 qubits
+    # Use a chemically motivated ansatz based on the UCCSD-like structure
+    # but adapted for the limited qubit count and known molecular symmetries
+    
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=12)
+    
+    # Prepare Hartree-Fock state: electrons occupy the lowest energy orbitals
+    # For H3+ in STO-3G: 2 electrons fill the 1σg orbital (spin-up and spin-down)
+    # Mapping: spin-orbitals are ordered as α0, β0, α1, β1, α2, β2
+    # HF state: α0 and β0 occupied → qubits 0 and 1 set to |1⟩
+    qc.x(0)
+    qc.x(1)
+    
+    # Add single and double excitation operators
+    # Single excitations: (i ↔ a) where i is occupied, a is virtual
+    # Double excitations: (i,j ↔ a,b) where i,j occupied, a,b virtual
+    
+    # Single excitations for H3+ (occupied: 0,1; virtual: 2,3,4,5)
+    # θ0: 0 ↔ 2
+    qc.ry(params[0], 2)
+    qc.cx(0, 2)
+    qc.ry(-params[0], 2)
+    qc.cx(0, 2)
+    
+    # θ1: 1 ↔ 3
+    qc.ry(params[1], 3)
+    qc.cx(1, 3)
+    qc.ry(-params[1], 3)
+    qc.cx(1, 3)
+    
+    # θ2: 0 ↔ 4
+    qc.ry(params[2], 4)
+    qc.cx(0, 4)
+    qc.ry(-params[2], 4)
+    qc.cx(0, 4)
+    
+    # θ3: 1 ↔ 5
+    qc.ry(params[3], 5)
+    qc.cx(1, 5)
+    qc.ry(-params[3], 5)
+    qc.cx(1, 5)
+    
+    # Double excitations (most important for molecular systems)
+    # θ4: 0,1 ↔ 2,3
+    qc.cx(0, 2)
+    qc.cx(1, 3)
+    qc.ry(params[4], 3)
+    qc.cx(2, 3)
+    qc.ry(-params[4], 3)
+    qc.cx(2, 3)
+    qc.cx(1, 3)
+    qc.cx(0, 2)
+    
+    # θ5: 0,1 ↔ 2,4
+    qc.cx(0, 2)
+    qc.cx(1, 4)
+    qc.ry(params[5], 4)
+    qc.cx(2, 4)
+    qc.ry(-params[5], 4)
+    qc.cx(2, 4)
+    qc.cx(1, 4)
+    qc.cx(0, 2)
+    
+    # θ6: 0,1 ↔ 2,5
+    qc.cx(0, 2)
+    qc.cx(1, 5)
+    qc.ry(params[6], 5)
+    qc.cx(2, 5)
+    qc.ry(-params[6], 5)
+    qc.cx(2, 5)
+    qc.cx(1, 5)
+    qc.cx(0, 2)
+    
+    # θ7: 0,1 ↔ 3,4
+    qc.cx(0, 3)
+    qc.cx(1, 4)
+    qc.ry(params[7], 4)
+    qc.cx(3, 4)
+    qc.ry(-params[7], 4)
+    qc.cx(3, 4)
+    qc.cx(1, 4)
+    qc.cx(0, 3)
+    
+    # θ8: 0,1 ↔ 3,5
+    qc.cx(0, 3)
+    qc.cx(1, 5)
+    qc.ry(params[8], 5)
+    qc.cx(3, 5)
+    qc.ry(-params[8], 5)
+    qc.cx(3, 5)
+    qc.cx(1, 5)
+    qc.cx(0, 3)
+    
+    # θ9: 0,1 ↔ 4,5
+    qc.cx(0, 4)
+    qc.cx(1, 5)
+    qc.ry(params[9], 5)
+    qc.cx(4, 5)
+    qc.ry(-params[9], 5)
+    qc.cx(4, 5)
+    qc.cx(1, 5)
+    qc.cx(0, 4)
+    
+    # Additional single excitations for better convergence
+    # θ10: 0 ↔ 3
+    qc.ry(params[10], 3)
+    qc.cx(0, 3)
+    qc.ry(-params[10], 3)
+    qc.cx(0, 3)
+    
+    # θ11: 1 ↔ 2
+    qc.ry(params[11], 2)
+    qc.cx(1, 2)
+    qc.ry(-params[11], 2)
+    qc.cx(1, 2)
+    
+    return qc, params
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

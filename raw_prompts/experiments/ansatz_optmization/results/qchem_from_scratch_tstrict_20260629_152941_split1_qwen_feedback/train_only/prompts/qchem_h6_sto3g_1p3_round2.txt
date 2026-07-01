@@ -1,0 +1,222 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: H6; basis: STO-3G; geometry/bondlength parameter: 1.3; qubits: 12.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -3.097824203422, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -3.093078783025.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H6 in STO-3G basis with bond length 1.3 Angstrom
+    # Using a chemistry-inspired UCCSD-like ansatz with restricted active space
+    # Based on the benchmark: 12 qubits, FCI energy = -3.097824203422
+    
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=24)
+    
+    # Prepare Hartree-Fock state (for H6 in STO-3G: 6 electrons occupy 6 lowest orbitals)
+    # Spin-orbital ordering: α0, β0, α1, β1, α2, β2, α3, β3, α4, β4, α5, β5
+    # Electrons occupy: α0, β0, α1, β1, α2, β2 (6 electrons)
+    for i in range(6):
+        qc.x(i)
+    
+    # Add single and double excitation operators (simplified UCCSD)
+    # Single excitations: (i, a) where i is occupied, a is virtual
+    # Double excitations: (i,j, a,b) where i,j occupied, a,b virtual
+    
+    # Single excitations for H6 (6 occupied, 6 virtual orbitals)
+    # Using parameters θ[0:12] for singles
+    singles = [
+        (0, 6), (1, 7), (2, 8), (3, 9), (4, 10), (5, 11),  # α→α
+        (0, 7), (2, 9), (4, 11),  # α→β (spin-flip, often negligible but included for completeness)
+        (1, 6), (3, 8), (5, 10)   # β→α
+    ]
+    
+    # Double excitations - only keep spin-conserving ones for efficiency
+    # Using parameters θ[12:24] for doubles
+    doubles = [
+        (0, 1, 6, 7), (2, 3, 8, 9), (4, 5, 10, 11),  # αβ→αβ
+        (0, 2, 6, 8), (0, 4, 6, 10), (2, 4, 8, 10),  # αα→αα
+        (1, 3, 7, 9), (1, 5, 7, 11), (3, 5, 9, 11)   # ββ→ββ
+    ]
+    
+    # Implement single excitations using double excitation gates
+    for idx, (i, a) in enumerate(singles):
+        # Implement single excitation as two double excitations with one virtual/occupied set to same orbital
+        # Using the standard decomposition: exp(θ*(T† - T)) ≈ 
+        #   exp(θ/2 * (a†_a a_i - a†_i a_a)) implemented via two double excitations
+        
+        # For single excitation (i,a), use double excitation with j=i, b=a and θ/2
+        # But since we don't have native single excitation, use standard technique:
+        # Apply RY(θ) on qubit i and RY(-θ) on qubit a with controlled-Z between them
+        
+        # Simpler approach: use single excitation gate if available, otherwise decompose
+        # Qiskit doesn't have native single excitation, so use decomposition:
+        # Reference: arXiv:1701.02691
+        
+        # For single excitation between qubits i and a:
+        qc.ry(params[idx], i)
+        qc.ry(-params[idx], a)
+        qc.cz(i, a)
+        qc.ry(2*params[idx], a)
+        qc.cz(i, a)
+        qc.ry(-2*params[idx], a)
+    
+    # Implement double excitations
+    for idx, (i, j, a, b) in enumerate(doubles):
+        param_idx = 12 + idx
+        # Double excitation decomposition using 6 CZ gates
+        # Reference: arXiv:1805.04340
+        
+        # First layer
+        qc.ry(params[param_idx]/2, i)
+        qc.ry(params[param_idx]/2, j)
+        qc.ry(-params[param_idx]/2, a)
+        qc.ry(-params[param_idx]/2, b)
+        
+        # Controlled operations
+        qc.cz(i, j)
+        qc.cz(a, b)
+        
+        # Second layer
+        qc.ry(-params[param_idx]/2, i)
+        qc.ry(-params[param_idx]/2, j)
+        qc.ry(params[param_idx]/2, a)
+        qc.ry(params[param_idx]/2, b)
+        
+        # Third layer
+        qc.cz(i, a)
+        qc.cz(j, b)
+        
+        # Final layer
+        qc.ry(params[param_idx]/2, i)
+        qc.ry(params[param_idx]/2, j)
+        qc.ry(-params[param_idx]/2, a)
+        qc.ry(-params[param_idx]/2, b)
+        
+        qc.cz(i, a)
+        qc.cz(j, b)
+    
+    return qc, params
+```
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H6 in STO-3G basis with bond length 1.3 Angstrom
+    # Using a chemistry-inspired UCCSD-like ansatz with restricted active space
+    # Based on the benchmark: 12 qubits, FCI energy = -3.097824203422
+    
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=24)
+    
+    # Prepare Hartree-Fock state (for H6 in STO-3G: 6 electrons occupy 6 lowest orbitals)
+    # Spin-orbital ordering: α0, β0, α1, β1, α2, β2, α3, β3, α4, β4, α5, β5
+    # Electrons occupy: α0, β0, α1, β1, α2, β2 (6 electrons)
+    for i in range(6):
+        qc.x(i)
+    
+    # Add single and double excitation operators (simplified UCCSD)
+    # Single excitations: (i, a) where i is occupied, a is virtual
+    # Double excitations: (i,j, a,b) where i,j occupied, a,b virtual
+    
+    # Single excitations for H6 (6 occupied, 6 virtual orbitals)
+    # Using parameters θ[0:12] for singles
+    singles = [
+        (0, 6), (1, 7), (2, 8), (3, 9), (4, 10), (5, 11),  # α→α
+        (0, 7), (2, 9), (4, 11),  # α→β (spin-flip, often negligible but included for completeness)
+        (1, 6), (3, 8), (5, 10)   # β→α
+    ]
+    
+    # Double excitations - only keep spin-conserving ones for efficiency
+    # Using parameters θ[12:24] for doubles
+    doubles = [
+        (0, 1, 6, 7), (2, 3, 8, 9), (4, 5, 10, 11),  # αβ→αβ
+        (0, 2, 6, 8), (0, 4, 6, 10), (2, 4, 8, 10),  # αα→αα
+        (1, 3, 7, 9), (1, 5, 7, 11), (3, 5, 9, 11)   # ββ→ββ
+    ]
+    
+    # Implement single excitations using efficient decomposition
+    # Using the standard single excitation gate decomposition with 6 CNOTs
+    # Reference: arXiv:1701.02691
+    for idx, (i, a) in enumerate(singles):
+        # Use efficient single excitation decomposition with 2 CNOTs
+        # This is a more compact version that preserves expressibility while reducing depth
+        qc.h(i)
+        qc.h(a)
+        qc.cx(i, a)
+        qc.rz(params[idx], a)
+        qc.cx(i, a)
+        qc.h(i)
+        qc.h(a)
+    
+    # Implement double excitations using optimized decomposition
+    # Using 6 CNOTs per double excitation for better trainability
+    # Reference: arXiv:1805.04340
+    for idx, (i, j, a, b) in enumerate(doubles):
+        param_idx = 12 + idx
+        
+        # Efficient double excitation decomposition with 6 CNOTs
+        # Layer 1
+        qc.h(i)
+        qc.h(j)
+        qc.h(a)
+        qc.h(b)
+        
+        qc.cx(i, j)
+        qc.cx(a, b)
+        
+        qc.rz(params[param_idx]/2, j)
+        qc.rz(params[param_idx]/2, b)
+        
+        qc.cx(i, a)
+        qc.cx(j, b)
+        
+        qc.rz(-params[param_idx]/2, a)
+        qc.rz(-params[param_idx]/2, b)
+        
+        qc.cx(i, a)
+        qc.cx(j, b)
+        
+        qc.cx(i, j)
+        qc.cx(a, b)
+        
+        qc.h(i)
+        qc.h(j)
+        qc.h(a)
+        qc.h(b)
+    
+    return qc, params
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

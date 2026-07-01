@@ -1,0 +1,259 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: NeH+; basis: STO-3G; geometry/bondlength parameter: 0.5; qubits: 12.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -125.940309701466, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -125.939499286285.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # Build a UCCSD-like ansatz for NeH+ in STO-3G basis
+    # Using the standard particle-conserving ansatz structure
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for single and double excitations
+    # For NeH+ (12 qubits), we have specific excitation patterns
+    # Based on the molecular orbital structure in STO-3G basis
+    
+    # Parameters for single excitations (8 parameters)
+    theta_s = ParameterVector('theta_s', 8)
+    
+    # Parameters for double excitations (4 parameters)
+    theta_d = ParameterVector('theta_d', 4)
+    
+    # Reference: Hartree-Fock state for NeH+ in STO-3G
+    # NeH+ has 8 electrons, so 8 orbitals occupied in HF reference
+    # In qubit representation (12 qubits), HF state is |111111110000>
+    
+    # Apply single excitations
+    # Single excitations: (0,4), (1,5), (2,6), (3,7), (8,10), (9,11), (0,8), (1,9)
+    # These correspond to excitations between spatial orbitals
+    
+    # First set of single excitations (core-valence)
+    for i, param in enumerate(theta_s[:4]):
+        q_i = i  # occupied orbital i
+        q_a = i + 4  # virtual orbital a
+        # Implement single excitation using double commutator decomposition
+        # Using the standard implementation from quantum chemistry
+        qc.rz(-param/2, q_a)
+        qc.rz(param/2, q_i)
+        qc.cx(q_a, q_i)
+        qc.rz(-param/2, q_i)
+        qc.cx(q_a, q_i)
+        qc.rz(param/2, q_i)
+    
+    # Second set of single excitations (valence-valence)
+    for i, param in enumerate(theta_s[4:]):
+        q_i = 8 + i  # occupied orbital (virtual in original indexing but occupied after rotation)
+        q_a = 10 + i  # virtual orbital
+        qc.rz(-param/2, q_a)
+        qc.rz(param/2, q_i)
+        qc.cx(q_a, q_i)
+        qc.rz(-param/2, q_i)
+        qc.cx(q_a, q_i)
+        qc.rz(param/2, q_i)
+    
+    # Apply double excitations
+    # Double excitations: (0,1,4,5), (2,3,6,7), (0,2,4,6), (1,3,5,7)
+    for i, param in enumerate(theta_d):
+        # For simplicity, use the standard double excitation circuit
+        # Using the decomposition from arXiv:1805.04340
+        if i == 0:  # (0,1,4,5)
+            q1, q2, q3, q4 = 0, 1, 4, 5
+        elif i == 1:  # (2,3,6,7)
+            q1, q2, q3, q4 = 2, 3, 6, 7
+        elif i == 2:  # (0,2,4,6)
+            q1, q2, q3, q4 = 0, 2, 4, 6
+        else:  # (1,3,5,7)
+            q1, q2, q3, q4 = 1, 3, 5, 7
+        
+        # Double excitation circuit
+        qc.cx(q3, q4)
+        qc.cx(q1, q2)
+        qc.h(q2)
+        qc.cx(q3, q2)
+        qc.rz(param/2, q1)
+        qc.rz(-param/2, q2)
+        qc.cx(q1, q2)
+        qc.h(q2)
+        qc.cx(q1, q3)
+        qc.cx(q2, q4)
+        qc.rz(-param/2, q3)
+        qc.rz(param/2, q4)
+        qc.cx(q2, q4)
+        qc.cx(q1, q3)
+    
+    # Return circuit and parameters
+    parameters = list(theta_s) + list(theta_d)
+    return qc, parameters
+```
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    qc = QuantumCircuit(num_qubits)
+    
+    # Initialize Hartree-Fock state for NeH+ (8 electrons in STO-3G)
+    # HF configuration: |111111110000>
+    for i in range(8):
+        qc.x(i)
+    
+    # Create parameter vectors
+    # Use a compact but expressive ansatz with single and double excitations
+    # Based on the molecular structure and known patterns for NeH+
+    theta_s = ParameterVector('theta_s', length=8)
+    theta_d = ParameterVector('theta_d', length=4)
+    
+    # Single excitations: occupied -> virtual transitions
+    # For NeH+ STO-3G: occupied orbitals 0-7, virtual 8-11
+    # Select key single excitations that contribute significantly
+    single_excitations = [
+        (0, 8), (1, 9), (2, 10), (3, 11),  # main valence excitations
+        (4, 8), (5, 9), (6, 10), (7, 11)   # additional core-valence
+    ]
+    
+    # Apply single excitations using standard commutator decomposition
+    for i, (q_i, q_a) in enumerate(single_excitations):
+        param = theta_s[i]
+        # Implement single excitation gate
+        qc.cx(q_a, q_i)
+        qc.rz(-param/2, q_i)
+        qc.cx(q_a, q_i)
+        qc.rz(param/2, q_i)
+    
+    # Double excitations: important for electron correlation
+    # Key double excitations for NeH+
+    double_excitations = [
+        (0, 1, 8, 9),   # same spin pair
+        (2, 3, 10, 11), # same spin pair
+        (0, 2, 8, 10),  # cross spin
+        (1, 3, 9, 11)   # cross spin
+    ]
+    
+    # Apply double excitations using efficient decomposition
+    for i, (q1, q2, q3, q4) in enumerate(double_excitations):
+        param = theta_d[i]
+        # Standard double excitation circuit (arXiv:1805.04340)
+        qc.cx(q3, q4)
+        qc.cx(q1, q2)
+        qc.h(q2)
+        qc.cx(q3, q2)
+        qc.rz(param/2, q1)
+        qc.rz(-param/2, q2)
+        qc.cx(q1, q2)
+        qc.h(q2)
+        qc.cx(q1, q3)
+        qc.cx(q2, q4)
+        qc.rz(-param/2, q3)
+        qc.rz(param/2, q4)
+        qc.cx(q2, q4)
+        qc.cx(q1, q3)
+    
+    parameters = list(theta_s) + list(theta_d)
+    return qc, parameters
+```
+```
+
+Round 2 Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    qc = QuantumCircuit(num_qubits)
+    
+    # Initialize Hartree-Fock state for NeH+ (8 electrons in STO-3G)
+    # HF configuration: |111111110000>
+    for i in range(8):
+        qc.x(i)
+    
+    # Create parameter vectors
+    # Use a compact but expressive ansatz with single and double excitations
+    # Based on the molecular structure and known patterns for NeH+
+    theta_s = ParameterVector('theta_s', length=8)
+    theta_d = ParameterVector('theta_d', length=4)
+    
+    # Single excitations: occupied -> virtual transitions
+    # For NeH+ STO-3G: occupied orbitals 0-7, virtual 8-11
+    # Select key single excitations that contribute significantly
+    single_excitations = [
+        (0, 8), (1, 9), (2, 10), (3, 11),  # main valence excitations
+        (4, 8), (5, 9), (6, 10), (7, 11)   # additional core-valence
+    ]
+    
+    # Apply single excitations using standard commutator decomposition
+    for i, (q_i, q_a) in enumerate(single_excitations):
+        param = theta_s[i]
+        # Implement single excitation gate using the standard decomposition
+        qc.cx(q_a, q_i)
+        qc.rz(-param/2, q_i)
+        qc.cx(q_a, q_i)
+        qc.rz(param/2, q_i)
+    
+    # Double excitations: important for electron correlation
+    # Key double excitations for NeH+
+    double_excitations = [
+        (0, 1, 8, 9),   # same spin pair
+        (2, 3, 10, 11), # same spin pair
+        (0, 2, 8, 10),  # cross spin
+        (1, 3, 9, 11)   # cross spin
+    ]
+    
+    # Apply double excitations using efficient decomposition
+    for i, (q1, q2, q3, q4) in enumerate(double_excitations):
+        param = theta_d[i]
+        # Standard double excitation circuit (arXiv:1805.04340)
+        qc.cx(q3, q4)
+        qc.cx(q1, q2)
+        qc.h(q2)
+        qc.cx(q3, q2)
+        qc.rz(param/2, q1)
+        qc.rz(-param/2, q2)
+        qc.cx(q1, q2)
+        qc.h(q2)
+        qc.cx(q1, q3)
+        qc.cx(q2, q4)
+        qc.rz(-param/2, q3)
+        qc.rz(param/2, q4)
+        qc.cx(q2, q4)
+        qc.cx(q1, q3)
+    
+    parameters = list(theta_s) + list(theta_d)
+    return qc, parameters
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

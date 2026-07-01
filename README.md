@@ -5,6 +5,9 @@ This static viewer compares two Qwen3-Coder ansatz-generation settings on the sa
 - Open the viewer: [index.html](index.html)
 - Reference-start chart: [assets/reference_start_metric_trends.png](assets/reference_start_metric_trends.png)
 - From-scratch chart: [assets/from_scratch_metric_trends.png](assets/from_scratch_metric_trends.png)
+- Raw prompts: [raw_prompts/](raw_prompts/)
+
+Each task page links every Qwen round to the exact prompt text used for that request.
 
 ## Experiment Setup
 

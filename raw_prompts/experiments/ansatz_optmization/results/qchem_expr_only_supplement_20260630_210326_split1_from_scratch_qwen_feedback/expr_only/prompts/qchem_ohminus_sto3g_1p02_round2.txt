@@ -1,0 +1,173 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: OH-; basis: STO-3G; geometry/bondlength parameter: 1.02; qubits: 12.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -74.090204777335, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -74.089793777950.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # Build a UCCSD-like ansatz for OH- in STO-3G basis
+    # Using 12 qubits as specified
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for single and double excitations
+    # For OH- (12 qubits), typical UCCSD has 6 singles and 15 doubles
+    singles_params = ParameterVector('theta_s', 6)
+    doubles_params = ParameterVector('theta_d', 15)
+    
+    # Reference Hartree-Fock state: electrons occupy lowest orbitals
+    # For OH- in STO-3G: 10 electrons fill orbitals 0-4 (spin-orbitals 0-9)
+    # Initialize in |111110000000⟩ (first 5 spatial orbitals occupied)
+    for i in range(10):
+        qc.x(i)
+    
+    # Single excitations: create/annihilate pairs (i, a) where i occupied, a virtual
+    # For 10 electrons in 12 qubits: occupied = [0,1,2,3,4,5,6,7,8,9], virtual = [10,11]
+    # But with spin-orbitals, we have more combinations
+    # Standard mapping: spin-orbitals 0-11, first 10 occupied in HF state
+    
+    # Single excitations (i, a) where i < 10 and a >= 10
+    # Only possible singles: (0,10), (1,11), (2,10), (3,11), (4,10), (5,11)
+    # But due to spin restrictions and symmetry, we use 6 parameters as above
+    
+    # Implement single excitations using double excitation decomposition
+    # For each single excitation (i,a), use two qubits
+    single_idx = 0
+    # (0,10) - alpha spin
+    if single_idx < len(singles_params):
+        i, a = 0, 10
+        qc.cry(singles_params[single_idx], i, a)
+        qc.cx(a, i)
+        single_idx += 1
+    
+    # (1,11) - beta spin  
+    if single_idx < len(singles_params):
+        i, a = 1, 11
+        qc.cry(singles_params[single_idx], i, a)
+        qc.cx(a, i)
+        single_idx += 1
+    
+    # Double excitations: (i,j,a,b) where i<j occupied, a<b virtual
+    # In STO-3G OH-, only spatial orbitals 0,1,2 are occupied (5 orbitals total)
+    # With spin, we have many possible double excitations
+    # Standard approach: use all possible (i,j,a,b) with i<j, a<b
+    
+    double_idx = 0
+    # Generate all possible double excitations for 10 occupied spin-orbitals and 2 virtual
+    # Only combinations where both virtual orbitals are available (10,11)
+    # So doubles must be of form (i,j,10,11) where i<j and i,j < 10
+    
+    for i in range(10):
+        for j in range(i+1, 10):
+            if double_idx < len(doubles_params):
+                # Implement double excitation using 4-qubit circuit
+                # Using the standard decomposition with 6 CNOTs
+                a, b = 10, 11
+                
+                # Circuit for double excitation (i,j,a,b)
+                qc.cx(i, j)
+                qc.cx(a, b)
+                qc.cry(doubles_params[double_idx], j, b)
+                qc.cx(i, j)
+                qc.cx(a, b)
+                qc.cry(-doubles_params[double_idx], i, b)
+                qc.cx(i, j)
+                qc.cx(a, b)
+                qc.cry(doubles_params[double_idx], j, a)
+                qc.cx(i, j)
+                qc.cx(a, b)
+                qc.cry(-doubles_params[double_idx], i, a)
+                qc.cx(i, j)
+                qc.cx(a, b)
+                
+                double_idx += 1
+    
+    # If we haven't used all parameters, add additional rotations
+    # For completeness, add single-qubit rotations on all qubits
+    for i in range(num_qubits):
+        qc.ry(ParameterVector('theta_r', num_qubits)[i], i)
+    
+    return qc, list(singles_params) + list(doubles_params) + list(ParameterVector('theta_r', num_qubits))
+```
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: pass. Expressibility E: 1.000000. Hidden scores: T, R.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # Build a hardware-efficient ansatz for OH- in STO-3G basis with 12 qubits
+    # Preserves correctness while optimizing expressibility and trainability
+    
+    qc = QuantumCircuit(num_qubits)
+    
+    # Initialize Hartree-Fock state: OH- has 10 electrons in STO-3G
+    # Fill the lowest 10 spin-orbitals (indices 0-9)
+    for i in range(10):
+        qc.x(i)
+    
+    # Create parameter vectors
+    # Use 12 parameters for single-qubit rotations (one per qubit)
+    # Use 11 parameters for entangling layers to maintain connectivity
+    rot_params = ParameterVector('theta_rot', num_qubits)
+    ent_params = ParameterVector('theta_ent', num_qubits - 1)
+    
+    # First layer: single-qubit rotations on all qubits
+    for i in range(num_qubits):
+        qc.ry(rot_params[i], i)
+        qc.rz(rot_params[i] * 0.5, i)
+    
+    # Entangling layer: alternating CNOTs with parameterized rotations
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+        qc.ry(ent_params[i], i + 1)
+    
+    # Second layer of single-qubit rotations with different angles
+    for i in range(num_qubits):
+        qc.rz(rot_params[i] + 0.3, i)
+        qc.ry(rot_params[i] * 0.7, i)
+    
+    # Additional entangling layer for improved expressibility
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+        qc.rz(ent_params[i] * 0.5, i + 1)
+    
+    # Final single-qubit rotation layer
+    for i in range(num_qubits):
+        qc.ry(rot_params[i] * 0.3, i)
+    
+    # Collect all parameters
+    all_params = list(rot_params) + list(ent_params)
+    
+    return qc, all_params
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

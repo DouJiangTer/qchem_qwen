@@ -1,0 +1,188 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: H5; basis: STO-3G; geometry/bondlength parameter: 1.2; qubits: 10.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -2.597527643634, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -2.595219375636.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H5 molecule in STO-3G basis with 10 qubits
+    # Using a hardware-efficient ansatz with Ry and Rz rotations and CNOT entanglement
+    # following the structure commonly used for molecular VQE
+    
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for single-qubit rotations
+    theta = ParameterVector('θ', num_qubits)
+    phi = ParameterVector('φ', num_qubits)
+    lam = ParameterVector('λ', num_qubits)
+    
+    # Apply U3 gates for initial rotation layer
+    for i in range(num_qubits):
+        qc.u3(theta[i], phi[i], lam[i], i)
+    
+    # Add entangling layers with CNOT gates in a linear chain
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+    
+    # Add another rotation layer
+    for i in range(num_qubits):
+        qc.u3(theta[i + num_qubits], phi[i + num_qubits], lam[i + num_qubits], i)
+    
+    # Final entangling layer
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+    
+    # Add third rotation layer
+    for i in range(num_qubits):
+        qc.u3(theta[i + 2 * num_qubits], phi[i + 2 * num_qubits], lam[i + 2 * num_qubits], i)
+    
+    # Collect all parameters
+    params = list(theta) + list(phi) + list(lam)
+    
+    return qc, params
+```
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H5 molecule in STO-3G basis with 10 qubits
+    # Using a hardware-efficient ansatz with Ry and Rz rotations and CNOT entanglement
+    # Optimized for trainability and reliability while maintaining correctness
+    
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for single-qubit rotations
+    theta = ParameterVector('θ', num_qubits)
+    phi = ParameterVector('φ', num_qubits)
+    
+    # Initialize with Hartree-Fock state (all qubits |0⟩, but for fermionic systems
+    # we typically prepare the ground state with occupied orbitals)
+    # For H5 STO-3G, we need to prepare the appropriate fermionic ground state
+    # Using a simple approach: apply X gates to first N/2 qubits for spin-polarized case
+    # or use more sophisticated preparation - here we follow standard practice for VQE
+    
+    # Apply Ry rotation to prepare initial state (approximation for H5)
+    for i in range(num_qubits):
+        qc.ry(theta[i], i)
+    
+    # Add entangling layers with CNOT gates in a linear chain
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+    
+    # Add second rotation layer with different parameters
+    for i in range(num_qubits):
+        qc.rz(phi[i], i)
+    
+    # Add second entangling layer
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+    
+    # Add third rotation layer
+    for i in range(num_qubits):
+        qc.ry(theta[i + num_qubits], i)
+    
+    # Add third entangling layer
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+    
+    # Add final rotation layer
+    for i in range(num_qubits):
+        qc.rz(phi[i + num_qubits], i)
+    
+    # Collect all parameters
+    params = list(theta) + list(phi)
+    
+    return qc, params
+```
+```
+
+Round 2 Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H5 molecule in STO-3G basis with 10 qubits
+    # Using a chemically inspired UCCSD-like ansatz with Ry and Rz rotations
+    # and CNOT entanglement, designed for trainability and reliability
+    
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors
+    # Use fewer parameters to avoid barren plateaus while maintaining expressiveness
+    theta = ParameterVector('θ', num_qubits)
+    phi = ParameterVector('φ', num_qubits // 2)
+    
+    # Initialize with Hartree-Fock state: for H5 STO-3G, 5 electrons occupy 5 orbitals
+    # In spin-orbital representation with 10 qubits, we need to prepare 5 occupied orbitals
+    # Apply X gates to first 5 qubits to create the |1111100000⟩ Hartree-Fock state
+    for i in range(5):
+        qc.x(i)
+    
+    # Add single-qubit rotation layers with alternating Ry and Rz for better expressibility
+    for i in range(num_qubits):
+        qc.ry(theta[i], i)
+    
+    # Entangling layer with CNOT in linear topology
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+    
+    # Second rotation layer with different parameters
+    for i in range(num_qubits):
+        qc.rz(theta[i], i)
+    
+    # Second entangling layer
+    for i in range(num_qubits - 1):
+        qc.cx(i, i + 1)
+    
+    # Third rotation layer with additional parameters for improved expressibility
+    for i in range(num_qubits // 2):
+        qc.ry(phi[i], 2 * i)  # Apply to even qubits only to reduce parameter count
+    
+    # Final entangling layer with reduced connectivity to improve reliability
+    for i in range(0, num_qubits - 2, 2):
+        qc.cx(i, i + 2)
+    
+    # Collect parameters
+    params = list(theta) + list(phi)
+    
+    return qc, params
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

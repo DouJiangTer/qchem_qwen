@@ -1,0 +1,6 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: H3+; basis: 6-31G; geometry/bondlength parameter: 0.874; qubits: 12.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -1.303858978451, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -1.302997976651.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.

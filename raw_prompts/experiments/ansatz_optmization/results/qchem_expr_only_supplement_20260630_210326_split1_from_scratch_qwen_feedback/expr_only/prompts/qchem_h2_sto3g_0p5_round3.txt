@@ -1,0 +1,338 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: H2; basis: STO-3G; geometry/bondlength parameter: 0.5; qubits: 4.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -1.055160737507, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -1.054263624773.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: pass. Expressibility E: 0.104996. Hidden scores: T, R.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H2 in STO-3G basis with 4 qubits uses a specific ansatz
+    # Based on the benchmark: UCCSD-like ansatz for 2 electrons in 4 orbitals
+    # This implements the standard particle-conserving ansatz for H2
+    
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for rotations
+    # Parameters for single and double excitations
+    params = ParameterVector('θ', 4)
+    
+    # Prepare Hartree-Fock state: |Ψ₀⟩ = |1100⟩ (for H2 with 2 electrons)
+    qc.x(0)
+    qc.x(1)
+    
+    # Implement the ansatz: e^{θ₀ (Y⊗X⊗X⊗Y - X⊗Y⊗Y⊗X)/8} 
+    # e^{θ₁ (Y⊗Y⊗X⊗X + X⊗X⊗Y⊗Y)/8}
+    # e^{θ₂ (Z⊗I⊗I⊗Z - I⊗Z⊗Z⊗I)/2}
+    # e^{θ₃ (Z⊗I⊗I⊗Z + I⊗Z⊗Z⊗I)/2}
+    
+    # First double excitation term: (Y⊗X⊗X⊗Y - X⊗Y⊗Y⊗X)/8
+    # Implement e^{i * θ₀ * (Y⊗X⊗X⊗Y)/8}
+    qc.ry(params[0]/2, 0)
+    qc.ry(params[0]/2, 1)
+    qc.rz(params[0]/2, 2)
+    qc.rz(params[0]/2, 3)
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+    qc.cx(2, 3)
+    qc.rz(-params[0]/2, 3)
+    qc.cx(2, 3)
+    qc.cx(1, 2)
+    qc.cx(0, 1)
+    qc.ry(-params[0]/2, 0)
+    qc.ry(-params[0]/2, 1)
+    qc.rz(-params[0]/2, 2)
+    qc.rz(-params[0]/2, 3)
+    
+    # Implement e^{-i * θ₀ * (X⊗Y⊗Y⊗X)/8}
+    qc.ry(params[0]/2, 0)
+    qc.rz(params[0]/2, 1)
+    qc.rz(params[0]/2, 2)
+    qc.ry(params[0]/2, 3)
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+    qc.cx(2, 3)
+    qc.rz(-params[0]/2, 3)
+    qc.cx(2, 3)
+    qc.cx(1, 2)
+    qc.cx(0, 1)
+    qc.ry(-params[0]/2, 0)
+    qc.rz(-params[0]/2, 1)
+    qc.rz(-params[0]/2, 2)
+    qc.ry(-params[0]/2, 3)
+    
+    # Second double excitation term: (Y⊗Y⊗X⊗X + X⊗X⊗Y⊗Y)/8
+    # Implement e^{i * θ₁ * (Y⊗Y⊗X⊗X)/8}
+    qc.ry(params[1]/2, 0)
+    qc.ry(params[1]/2, 1)
+    qc.ry(params[1]/2, 2)
+    qc.ry(params[1]/2, 3)
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+    qc.cx(2, 3)
+    qc.rz(-params[1]/2, 3)
+    qc.cx(2, 3)
+    qc.cx(1, 2)
+    qc.cx(0, 1)
+    qc.ry(-params[1]/2, 0)
+    qc.ry(-params[1]/2, 1)
+    qc.ry(-params[1]/2, 2)
+    qc.ry(-params[1]/2, 3)
+    
+    # Implement e^{i * θ₁ * (X⊗X⊗Y⊗Y)/8}
+    qc.rz(params[1]/2, 0)
+    qc.rz(params[1]/2, 1)
+    qc.ry(params[1]/2, 2)
+    qc.ry(params[1]/2, 3)
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+    qc.cx(2, 3)
+    qc.rz(-params[1]/2, 3)
+    qc.cx(2, 3)
+    qc.cx(1, 2)
+    qc.cx(0, 1)
+    qc.rz(-params[1]/2, 0)
+    qc.rz(-params[1]/2, 1)
+    qc.ry(-params[1]/2, 2)
+    qc.ry(-params[1]/2, 3)
+    
+    # Single excitation terms: Z⊗I⊗I⊗Z and I⊗Z⊗Z⊗I
+    # Implement e^{i * θ₂ * (Z⊗I⊗I⊗Z)/2}
+    qc.rz(params[2], 0)
+    qc.rz(params[2], 3)
+    
+    # Implement e^{-i * θ₂ * (I⊗Z⊗Z⊗I)/2}
+    qc.rz(-params[2], 1)
+    qc.rz(-params[2], 2)
+    
+    # Implement e^{i * θ₃ * (Z⊗I⊗I⊗Z)/2}
+    qc.rz(params[3], 0)
+    qc.rz(params[3], 3)
+    
+    # Implement e^{i * θ₃ * (I⊗Z⊗Z⊗I)/2}
+    qc.rz(params[3], 1)
+    qc.rz(params[3], 2)
+    
+    return qc, params
+```
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: pass. Expressibility E: 0.000149. Hidden scores: T, R.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H2 in STO-3G basis with 4 qubits - UCCSD-inspired ansatz
+    # This implements the standard particle-conserving ansatz for H2
+    # with improved structure for better expressibility and trainability
+    
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vector for trainable parameters
+    params = ParameterVector('θ', 4)
+    
+    # Prepare Hartree-Fock state: |1100⟩ (electrons in orbitals 0 and 1)
+    qc.x(0)
+    qc.x(1)
+    
+    # Implement the standard UCCSD ansatz for H2
+    # Single and double excitations parameterized by θ0, θ1, θ2, θ3
+    
+    # Double excitation term 1: (Y⊗X⊗X⊗Y - X⊗Y⊗Y⊗X)/8 -> θ0
+    # Optimized implementation using commutator structure
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+    qc.cx(2, 3)
+    qc.rz(params[0]/2, 3)
+    qc.cx(2, 3)
+    qc.cx(1, 2)
+    qc.cx(0, 1)
+    
+    qc.ry(params[0]/2, 0)
+    qc.ry(params[0]/2, 1)
+    qc.rz(params[0]/2, 2)
+    qc.rz(params[0]/2, 3)
+    
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+    qc.cx(2, 3)
+    qc.rz(-params[0]/2, 3)
+    qc.cx(2, 3)
+    qc.cx(1, 2)
+    qc.cx(0, 1)
+    
+    qc.ry(-params[0]/2, 0)
+    qc.ry(-params[0]/2, 1)
+    qc.rz(-params[0]/2, 2)
+    qc.rz(-params[0]/2, 3)
+    
+    # Double excitation term 2: (Y⊗Y⊗X⊗X + X⊗X⊗Y⊗Y)/8 -> θ1
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+    qc.cx(2, 3)
+    qc.rz(params[1]/2, 3)
+    qc.cx(2, 3)
+    qc.cx(1, 2)
+    qc.cx(0, 1)
+    
+    qc.ry(params[1]/2, 0)
+    qc.ry(params[1]/2, 1)
+    qc.ry(params[1]/2, 2)
+    qc.ry(params[1]/2, 3)
+    
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+    qc.cx(2, 3)
+    qc.rz(-params[1]/2, 3)
+    qc.cx(2, 3)
+    qc.cx(1, 2)
+    qc.cx(0, 1)
+    
+    qc.ry(-params[1]/2, 0)
+    qc.ry(-params[1]/2, 1)
+    qc.ry(-params[1]/2, 2)
+    qc.ry(-params[1]/2, 3)
+    
+    # Single excitation terms: Z⊗I⊗I⊗Z and I⊗Z⊗Z⊗I -> θ2, θ3
+    # Combined implementation for better trainability
+    qc.rz(params[2], 0)
+    qc.rz(params[2], 3)
+    qc.rz(-params[2], 1)
+    qc.rz(-params[2], 2)
+    
+    qc.rz(params[3], 0)
+    qc.rz(params[3], 3)
+    qc.rz(params[3], 1)
+    qc.rz(params[3], 2)
+    
+    return qc, params
+```
+```
+
+Round 2 Qwen candidate
+Feedback:
+Correctness: pass. Expressibility E: 0.000000. Hidden scores: T, R.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H2 in STO-3G basis with 4 qubits - optimized UCCSD ansatz
+    # Focus on improved expressibility and trainability while preserving correctness
+    
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', 4)
+    
+    # Prepare Hartree-Fock state: |1100⟩
+    qc.x(0)
+    qc.x(1)
+    
+    # Optimized double excitation implementation using commutator structure
+    # First double excitation (θ0) - improved implementation
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+    qc.cx(2, 3)
+    qc.rz(params[0]/2, 3)
+    qc.cx(2, 3)
+    qc.cx(1, 2)
+    qc.cx(0, 1)
+    
+    qc.ry(params[0]/2, 0)
+    qc.ry(params[0]/2, 1)
+    qc.rz(params[0]/2, 2)
+    qc.rz(params[0]/2, 3)
+    
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+    qc.cx(2, 3)
+    qc.rz(-params[0]/2, 3)
+    qc.cx(2, 3)
+    qc.cx(1, 2)
+    qc.cx(0, 1)
+    
+    qc.ry(-params[0]/2, 0)
+    qc.ry(-params[0]/2, 1)
+    qc.rz(-params[0]/2, 2)
+    qc.rz(-params[0]/2, 3)
+    
+    # Second double excitation (θ1) - simplified structure
+    qc.h(0)
+    qc.h(1)
+    qc.h(2)
+    qc.h(3)
+    
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+    qc.cx(2, 3)
+    qc.rz(params[1]/2, 3)
+    qc.cx(2, 3)
+    qc.cx(1, 2)
+    qc.cx(0, 1)
+    
+    qc.rz(params[1]/2, 0)
+    qc.rz(params[1]/2, 1)
+    qc.rz(params[1]/2, 2)
+    qc.rz(params[1]/2, 3)
+    
+    qc.cx(0, 1)
+    qc.cx(1, 2)
+    qc.cx(2, 3)
+    qc.rz(-params[1]/2, 3)
+    qc.cx(2, 3)
+    qc.cx(1, 2)
+    qc.cx(0, 1)
+    
+    qc.rz(-params[1]/2, 0)
+    qc.rz(-params[1]/2, 1)
+    qc.rz(-params[1]/2, 2)
+    qc.rz(-params[1]/2, 3)
+    
+    qc.h(0)
+    qc.h(1)
+    qc.h(2)
+    qc.h(3)
+    
+    # Single excitation terms (θ2, θ3) - combined for better trainability
+    qc.rz(params[2], 0)
+    qc.rz(params[2], 1)
+    qc.rz(params[2], 2)
+    qc.rz(params[2], 3)
+    
+    qc.rz(params[3], 0)
+    qc.rz(params[3], 1)
+    qc.rz(params[3], 2)
+    qc.rz(params[3], 3)
+    
+    return qc, params
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

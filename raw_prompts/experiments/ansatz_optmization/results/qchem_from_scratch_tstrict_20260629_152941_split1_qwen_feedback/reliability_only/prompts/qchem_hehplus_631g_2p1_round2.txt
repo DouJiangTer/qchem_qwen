@@ -1,0 +1,251 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: HeH+; basis: 6-31G; geometry/bondlength parameter: 2.1; qubits: 8.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -2.872385536502, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -2.871756343876.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # HeH+ in 6-31G basis with 8 qubits requires a specific ansatz
+    # Based on the benchmark, we use a particle-conserving ansatz suitable for molecular systems
+    # This implements a generalized single and double excitation ansatz
+    
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for single and double excitations
+    # For HeH+ with 8 qubits, we need parameters for the relevant excitations
+    n_spatial_orbitals = num_qubits // 2  # 4 spatial orbitals for 8 qubits
+    
+    # Parameters for single excitations (alpha and beta)
+    theta_single = ParameterVector('theta_s', n_spatial_orbitals * (n_spatial_orbitals - 1))
+    
+    # Parameters for double excitations
+    theta_double = ParameterVector('theta_d', (n_spatial_orbitals * (n_spatial_orbitals - 1)) // 2)
+    
+    # Initialize with Hartree-Fock state (for HeH+, occupied orbitals: 0, 1)
+    # Fill the first 2 qubits (spin orbitals 0 and 1) for the 2 electrons
+    for i in range(2):
+        circuit.x(i)
+    
+    # Implement single excitations: create superposition of 1-hole-1-particle states
+    # For 4 spatial orbitals, we have excitations from occupied (0,1) to virtual (2,3)
+    idx = 0
+    for i in range(2):  # occupied orbitals
+        for a in range(2, 4):  # virtual orbitals
+            # Spin-conserving excitations (alpha->alpha, beta->beta)
+            # Map spatial orbital indices to spin orbital indices
+            circuit.cry(2 * theta_single[idx], i*2, a*2)
+            circuit.cry(2 * theta_single[idx], i*2+1, a*2+1)
+            idx += 1
+    
+    # Implement double excitations: simultaneous excitation of electron pairs
+    # For HeH+, the most important double excitation is from (0,1) to (2,3)
+    idx_d = 0
+    # Double excitation from orbitals 0,1 to 2,3 (spin-conserving)
+    # Using the standard double excitation circuit (Bravyi-Kitaev or Jordan-Wigner)
+    # Here we use the standard implementation for 4 qubits representing 2 orbitals
+    
+    # For the specific mapping, we implement the double excitation between 
+    # spin orbitals (0,1) and (2,3)
+    # Using the circuit from arXiv:1805.03469 for double excitation
+    
+    # Double excitation circuit for qubits 0,1,2,3 (spin orbitals)
+    # This is a standard implementation for a double excitation
+    if num_qubits >= 4:
+        # Double excitation between orbitals 0,1 and 2,3
+        # Using the circuit structure for double excitation
+        circuit.h(0)
+        circuit.h(1)
+        circuit.h(2)
+        circuit.h(3)
+        
+        # Controlled rotations for double excitation
+        circuit.cx(0, 2)
+        circuit.cx(1, 3)
+        circuit.cry(2 * theta_double[0], 2, 3)
+        circuit.cx(1, 3)
+        circuit.cx(0, 2)
+        
+        circuit.h(0)
+        circuit.h(1)
+        circuit.h(2)
+        circuit.h(3)
+    
+    # Combine parameters
+    parameters = list(theta_single) + list(theta_double)
+    
+    return circuit, parameters
+```
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # Build a particle-conserving ansatz for molecular systems (HeH+ in 6-31G)
+    # Using 8 qubits (4 spatial orbitals), with Hartree-Fock state preparation
+    # and generalized single and double excitations
+    
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Hartree-Fock state preparation for HeH+ (2 electrons)
+    # In spin-orbital ordering: occupied orbitals are 0 and 1
+    circuit.x(0)
+    circuit.x(1)
+    
+    # Create parameter vectors
+    n_spatial = num_qubits // 2  # 4 spatial orbitals
+    n_occ = 2  # number of occupied orbitals
+    n_virt = n_spatial - n_occ  # 2 virtual orbitals
+    
+    # Single excitation parameters: from occupied to virtual orbitals
+    # For each pair (i,a) where i is occupied and a is virtual
+    theta_s = ParameterVector('theta_s', n_occ * n_virt)
+    
+    # Double excitation parameters: from (i,j) to (a,b)
+    # For HeH+, only one unique double excitation: (0,1) -> (2,3)
+    theta_d = ParameterVector('theta_d', 1)
+    
+    # Implement single excitations using controlled rotations
+    # Map spatial orbital excitations to spin orbitals
+    idx = 0
+    for i in range(n_occ):  # occupied orbitals 0,1
+        for a in range(n_occ, n_spatial):  # virtual orbitals 2,3
+            # Spin-conserving excitations for alpha and beta spins
+            # Using the circuit from arXiv:1805.03469 for single excitations
+            
+            # For spin-up (qubit 2*i) to spin-up (qubit 2*a)
+            circuit.h(2*i)
+            circuit.h(2*a)
+            circuit.cx(2*i, 2*a)
+            circuit.rz(-theta_s[idx], 2*a)
+            circuit.cx(2*i, 2*a)
+            circuit.h(2*i)
+            circuit.h(2*a)
+            
+            # For spin-down (qubit 2*i+1) to spin-down (qubit 2*a+1)
+            circuit.h(2*i+1)
+            circuit.h(2*a+1)
+            circuit.cx(2*i+1, 2*a+1)
+            circuit.rz(-theta_s[idx], 2*a+1)
+            circuit.cx(2*i+1, 2*a+1)
+            circuit.h(2*i+1)
+            circuit.h(2*a+1)
+            
+            idx += 1
+    
+    # Implement double excitation using the standard circuit
+    # For the (0,1) -> (2,3) double excitation
+    # Using the implementation from arXiv:1805.03469
+    if num_qubits >= 4:
+        # Double excitation circuit for qubits 0,1,2,3
+        # This implements e^{i*theta*(X0 X1 Y2 Y3 - Y0 Y1 X2 X3)/8}
+        
+        # First part: X0 X1 Y2 Y3
+        circuit.h(0)
+        circuit.h(1)
+        circuit.sdg(2)
+        circuit.sdg(3)
+        circuit.h(2)
+        circuit.h(3)
+        
+        circuit.cx(0, 2)
+        circuit.cx(2, 0)
+        circuit.cx(0, 3)
+        circuit.cx(3, 0)
+        circuit.cx(1, 2)
+        circuit.cx(2, 1)
+        circuit.cx(1, 3)
+        circuit.cx(3, 1)
+        
+        circuit.rz(theta_d[0], 0)
+        circuit.rz(theta_d[0], 1)
+        circuit.rz(-theta_d[0], 2)
+        circuit.rz(-theta_d[0], 3)
+        
+        circuit.cx(1, 3)
+        circuit.cx(3, 1)
+        circuit.cx(1, 2)
+        circuit.cx(2, 1)
+        circuit.cx(0, 3)
+        circuit.cx(3, 0)
+        circuit.cx(0, 2)
+        circuit.cx(2, 0)
+        
+        circuit.h(0)
+        circuit.h(1)
+        circuit.s(2)
+        circuit.s(3)
+        circuit.h(2)
+        circuit.h(3)
+        
+        # Second part: Y0 Y1 X2 X3 (contributes to the full double excitation)
+        circuit.s(0)
+        circuit.s(1)
+        circuit.h(2)
+        circuit.h(3)
+        
+        circuit.cx(0, 2)
+        circuit.cx(2, 0)
+        circuit.cx(0, 3)
+        circuit.cx(3, 0)
+        circuit.cx(1, 2)
+        circuit.cx(2, 1)
+        circuit.cx(1, 3)
+        circuit.cx(3, 1)
+        
+        circuit.rz(theta_d[0], 0)
+        circuit.rz(theta_d[0], 1)
+        circuit.rz(-theta_d[0], 2)
+        circuit.rz(-theta_d[0], 3)
+        
+        circuit.cx(1, 3)
+        circuit.cx(3, 1)
+        circuit.cx(1, 2)
+        circuit.cx(2, 1)
+        circuit.cx(0, 3)
+        circuit.cx(3, 0)
+        circuit.cx(0, 2)
+        circuit.cx(2, 0)
+        
+        circuit.sdg(0)
+        circuit.sdg(1)
+        circuit.h(2)
+        circuit.h(3)
+    
+    # Combine all parameters
+    parameters = list(theta_s) + list(theta_d)
+    
+    return circuit, parameters
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

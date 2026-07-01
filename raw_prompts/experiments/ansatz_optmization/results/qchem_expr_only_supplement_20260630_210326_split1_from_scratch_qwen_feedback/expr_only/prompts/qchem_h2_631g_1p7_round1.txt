@@ -1,0 +1,139 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: H2; basis: 6-31G; geometry/bondlength parameter: 1.7; qubits: 8.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -1.034044437534, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -1.033212352182.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H2 in 6-31G basis with bond length 1.7 Angstrom
+    # Uses 8 qubits as specified
+    qc = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state (for H2, 2 electrons occupy the first two orbitals)
+    # In the Jordan-Wigner representation, orbitals map to qubits directly
+    # For H2 (2 electrons), we need to excite from the first two occupied orbitals
+    # to the virtual orbitals. The standard ansatz for H2 is a single UCCSD excitation
+    
+    # Create parameter vectors for single and double excitations
+    # For H2, the UCCSD ansatz reduces to a single parameter for the double excitation
+    # and potentially parameters for single excitations, but for H2 the single excitations
+    # are symmetry-forbidden and can be omitted
+    
+    # However, to match the benchmark ansatz (which gives -1.033212352182), we use
+    # the standard particle-conserving UCCSD ansatz for H2
+    
+    # Parameters for the ansatz
+    theta = ParameterVector('θ', 1)
+    
+    # Prepare initial state |HF> = |11000000> (2 electrons in first two orbitals)
+    qc.x(0)
+    qc.x(1)
+    
+    # Add the double excitation gate (simulated as a controlled-controlled rotation)
+    # For 8 qubits, the double excitation between orbitals 0,1 -> 2,3
+    # maps to qubits 0,1 -> 2,3 in Jordan-Wigner
+    qc.cry(theta[0]/2, 0, 2)
+    qc.cx(0, 1)
+    qc.cry(-theta[0]/2, 1, 2)
+    qc.cx(0, 1)
+    qc.cx(1, 3)
+    qc.cry(theta[0]/2, 0, 3)
+    qc.cx(0, 1)
+    qc.cry(-theta[0]/2, 1, 3)
+    qc.cx(0, 1)
+    
+    # Note: The above is an approximation of the double excitation circuit
+    # A more accurate implementation for the double excitation uses a sequence of gates
+    # that preserves particle number. For H2, the standard ansatz is often implemented
+    # as a single parameter UCCSD with the following circuit:
+    
+    # Reset circuit for clarity and correctness
+    qc = QuantumCircuit(num_qubits)
+    qc.x(0)
+    qc.x(1)
+    
+    # Implement the double excitation using the standard circuit from quantum chemistry
+    # This is the particle-conserving double excitation gate
+    # Reference: arXiv:1805.04340
+    qc.h(2)
+    qc.h(3)
+    qc.cx(2, 0)
+    qc.cx(3, 1)
+    qc.cry(theta[0]/2, 0, 2)
+    qc.cx(0, 3)
+    qc.cx(2, 1)
+    qc.cry(-theta[0]/2, 1, 3)
+    qc.cx(0, 3)
+    qc.cx(2, 1)
+    qc.cry(theta[0]/2, 0, 2)
+    qc.cx(0, 3)
+    qc.cx(2, 1)
+    qc.cry(-theta[0]/2, 1, 3)
+    qc.cx(0, 3)
+    qc.cx(2, 1)
+    qc.h(2)
+    qc.h(3)
+    
+    # However, the most common and efficient implementation for H2 uses a simpler ansatz
+    # that matches the benchmark. Let's use the standard ansatz from PennyLane's 
+    # molecular Hamiltonian VQE example which typically uses a single parameter
+    
+    # Reset and use the standard ansatz that matches the benchmark energy
+    qc = QuantumCircuit(num_qubits)
+    qc.x(0)
+    qc.x(1)
+    
+    # Use the standard UCCSD ansatz for H2 with 8 qubits
+    # This is the particle-conserving double excitation
+    # Circuit from: https://qiskit.org/documentation/tutorials/molecular_hamiltonians.html
+    # For H2, the ansatz is: |HF> -> exp(theta * (T2 - T2^dag)) |HF>
+    # where T2 creates two electrons from orbitals 0,1 to 2,3
+    
+    # Implement the double excitation using the circuit from arXiv:1704.05018
+    qc.h(2)
+    qc.h(3)
+    qc.cx(2, 0)
+    qc.cx(3, 1)
+    qc.cry(theta[0]/2, 0, 2)
+    qc.cx(0, 3)
+    qc.cx(2, 1)
+    qc.cry(-theta[0]/2, 1, 3)
+    qc.cx(0, 3)
+    qc.cx(2, 1)
+    qc.cry(theta[0]/2, 0, 2)
+    qc.cx(0, 3)
+    qc.cx(2, 1)
+    qc.cry(-theta[0]/2, 1, 3)
+    qc.cx(0, 3)
+    qc.cx(2, 1)
+    qc.h(2)
+    qc.h(3)
+    
+    return qc, [theta[0]]
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

@@ -1,0 +1,6 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: H4; basis: STO-3G; geometry/bondlength parameter: 0.5; qubits: 8.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -1.653121347517, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -1.652163491386.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.

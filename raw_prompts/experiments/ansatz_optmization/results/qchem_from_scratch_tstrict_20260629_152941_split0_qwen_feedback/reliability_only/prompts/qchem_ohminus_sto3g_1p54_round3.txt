@@ -1,0 +1,189 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: OH-; basis: STO-3G; geometry/bondlength parameter: 1.54; qubits: 12.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -74.047394451640, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -74.046485850538.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: pass. Reliability R: 0.720968. Hidden scores: E, T.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # OH- in STO-3G basis with 12 qubits requires a specific ansatz
+    # Based on the benchmark, we implement a UCCSD-like ansatz with single and double excitations
+    # For simplicity and to match the benchmark energy, we use a hardware-efficient ansatz
+    # with layers of Ry rotations and CNOT entanglers
+    
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=3 * num_qubits)
+    
+    # Add Ry rotations for each qubit
+    for i in range(num_qubits):
+        qc.ry(params[3*i], i)
+        if i < num_qubits - 1:
+            qc.cx(i, i + 1)
+        qc.ry(params[3*i + 1], i)
+        if i < num_qubits - 1:
+            qc.cx(i, i + 1)
+        qc.rz(params[3*i + 2], i)
+    
+    return qc, params
+```
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    qc = QuantumCircuit(num_qubits)
+    # Use UCCSD-inspired ansatz for molecular systems
+    # For OH- in STO-3G with 12 qubits, include single and double excitations
+    params = ParameterVector('θ', length=24)
+    
+    # Prepare Hartree-Fock state: occupy orbitals 0,1,2,3,4,5 (6 electrons for OH-)
+    # Apply single and double excitations from occupied to virtual orbitals
+    
+    # Single excitations: (0->6), (1->7), (2->8), (3->9), (4->10), (5->11)
+    for i in range(6):
+        # θ_i for excitation from i to i+6
+        theta = params[i]
+        # Implement single excitation using 4 CNOTs and rotations
+        if i + 6 < num_qubits:
+            qc.ry(-theta/2, i+6)
+            qc.ry(-theta/2, i)
+            qc.cx(i+6, i)
+            qc.ry(theta/2, i+6)
+            qc.ry(theta/2, i)
+            qc.cx(i+6, i)
+    
+    # Double excitations: (0,1->6,7), (1,2->7,8), (2,3->8,9), (3,4->9,10), (4,5->10,11)
+    for i in range(5):
+        # θ_{6+i} for double excitation from i,i+1 to i+6,i+7
+        theta = params[6+i]
+        # Implement double excitation using 6 CNOTs and rotations
+        if i+7 < num_qubits:
+            # Standard double excitation circuit
+            qc.ry(theta/2, i+7)
+            qc.ry(theta/2, i+6)
+            qc.ry(theta/2, i+1)
+            qc.ry(theta/2, i)
+            qc.cx(i+7, i+6)
+            qc.cx(i+6, i+1)
+            qc.cx(i+1, i)
+            qc.ry(-theta/2, i+7)
+            qc.ry(-theta/2, i+6)
+            qc.ry(-theta/2, i+1)
+            qc.ry(-theta/2, i)
+            qc.cx(i+1, i)
+            qc.cx(i+6, i+1)
+            qc.cx(i+7, i+6)
+    
+    # Additional parameterized layers for improved expressibility
+    # Add Ry and Rz layers with more parameters
+    for layer in range(2):
+        for i in range(num_qubits):
+            qc.ry(params[11 + layer*6 + i], i)
+        for i in range(num_qubits - 1):
+            qc.cx(i, i+1)
+        for i in range(num_qubits):
+            qc.rz(params[11 + layer*6 + num_qubits + i], i)
+        for i in range(num_qubits - 1):
+            qc.cx(i, i+1)
+    
+    return qc, params
+```
+```
+
+Round 2 Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    qc = QuantumCircuit(num_qubits)
+    # Use UCCSD-inspired ansatz for OH- in STO-3G basis
+    # 6 electrons occupy orbitals 0-5 in Hartree-Fock state
+    params = ParameterVector('θ', length=24)
+    
+    # Prepare Hartree-Fock state (occupied orbitals 0-5)
+    # Already prepared by default in |0...0> with occupation mapping
+    
+    # Single excitations: from occupied (0-5) to virtual (6-11)
+    for i in range(6):
+        theta = params[i]
+        # Implement single excitation using 4 CNOTs
+        if i + 6 < num_qubits:
+            qc.ry(-theta/2, i+6)
+            qc.ry(-theta/2, i)
+            qc.cx(i+6, i)
+            qc.ry(theta/2, i+6)
+            qc.ry(theta/2, i)
+            qc.cx(i+6, i)
+    
+    # Double excitations: from (0,1), (1,2), (2,3), (3,4), (4,5) to (6,7), (7,8), (8,9), (9,10), (10,11)
+    for i in range(5):
+        theta = params[6 + i]
+        # Implement double excitation using 6 CNOTs
+        if i + 7 < num_qubits:
+            # Standard double excitation circuit
+            qc.ry(theta/2, i+7)
+            qc.ry(theta/2, i+6)
+            qc.ry(theta/2, i+1)
+            qc.ry(theta/2, i)
+            qc.cx(i+7, i+6)
+            qc.cx(i+6, i+1)
+            qc.cx(i+1, i)
+            qc.ry(-theta/2, i+7)
+            qc.ry(-theta/2, i+6)
+            qc.ry(-theta/2, i+1)
+            qc.ry(-theta/2, i)
+            qc.cx(i+1, i)
+            qc.cx(i+6, i+1)
+            qc.cx(i+7, i+6)
+    
+    # Additional parameterized layers for improved expressibility
+    # Add Ry and Rz layers with more parameters
+    for layer in range(2):
+        for i in range(num_qubits):
+            qc.ry(params[11 + layer*6 + i], i)
+        for i in range(num_qubits - 1):
+            qc.cx(i, i+1)
+        for i in range(num_qubits):
+            qc.rz(params[11 + layer*6 + num_qubits + i], i)
+        for i in range(num_qubits - 1):
+            qc.cx(i, i+1)
+    
+    return qc, params
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

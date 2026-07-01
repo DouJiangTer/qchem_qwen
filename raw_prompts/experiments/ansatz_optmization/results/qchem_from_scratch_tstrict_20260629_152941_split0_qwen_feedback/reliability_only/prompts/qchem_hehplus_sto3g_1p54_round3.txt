@@ -1,0 +1,207 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: HeH+; basis: STO-3G; geometry/bondlength parameter: 1.54; qubits: 4.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -2.822705040422, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -2.822679989734.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: pass. Reliability R: 0.875886. Hidden scores: E, T.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # HeH+ in STO-3G basis with 4 qubits
+    # Build a UCCSD-like ansatz adapted for 4 qubits
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for single and double excitations
+    # For 4 qubits, we have limited excitation possibilities
+    theta = ParameterVector('theta', 2)
+    
+    # Single excitation: i=0, j=2 (spin-orbital indices)
+    # Map to qubit indices: 0->0, 1->1, 2->2, 3->3 (spin-orbital to qubit mapping)
+    # Using qubit excitations: (0,2) and (1,3)
+    
+    # Apply single excitation (0,2)
+    # Implement using 4 CNOTs and RY rotation
+    circuit.cx(0, 2)
+    circuit.ry(theta[0], 2)
+    circuit.cx(0, 2)
+    
+    # Apply single excitation (1,3)
+    circuit.cx(1, 3)
+    circuit.ry(theta[1], 3)
+    circuit.cx(1, 3)
+    
+    # Add additional rotations for better expressiveness
+    # Add RZ rotations on all qubits
+    phi = ParameterVector('phi', num_qubits)
+    for i in range(num_qubits):
+        circuit.rz(phi[i], i)
+    
+    # Add more entangling layers for improved accuracy
+    # Double excitation approximation for 4 qubits: (0,1,2,3)
+    # Use a double excitation implementation with 6 CNOTs
+    # Simplified implementation using controlled rotations
+    
+    # Alternative: Use a general SU(4) ansatz for 2 qubits repeated
+    # But stick to molecular-inspired ansatz
+    
+    # Add more single excitations and correlations
+    # Add additional RY rotations on all qubits
+    psi = ParameterVector('psi', num_qubits)
+    for i in range(num_qubits):
+        circuit.ry(psi[i], i)
+    
+    # Add another layer of entangling CNOTs
+    for i in range(num_qubits - 1):
+        circuit.cx(i, i + 1)
+    
+    # Add final rotation layer
+    chi = ParameterVector('chi', num_qubits)
+    for i in range(num_qubits):
+        circuit.rz(chi[i], i)
+    
+    # Combine all parameters into one list
+    parameters = list(theta) + list(phi) + list(psi) + list(chi)
+    
+    return circuit, parameters
+```
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: pass. Reliability R: 0.840569. Hidden scores: E, T.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # HeH+ in STO-3G basis with 4 qubits
+    # Build a tailored ansatz inspired by UCCSD but optimized for expressibility and trainability
+    
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors
+    # Use fewer parameters to avoid barren plateaus while maintaining expressiveness
+    theta = ParameterVector('theta', 2)  # Two key excitation parameters
+    phi = ParameterVector('phi', num_qubits)  # Local rotations
+    
+    # Apply initial Hadamard layers for superposition (non-parameterized)
+    for i in range(num_qubits):
+        circuit.h(i)
+    
+    # Apply parameterized single excitation gates (mimicking UCCSD)
+    # For HeH+ STO-3G, the dominant excitations are between orbitals 0->2 and 1->3
+    # Implement using optimized CNOT sequences
+    
+    # First excitation: (0, 2)
+    circuit.cx(0, 2)
+    circuit.ry(theta[0], 2)
+    circuit.cx(0, 2)
+    
+    # Second excitation: (1, 3)
+    circuit.cx(1, 3)
+    circuit.ry(theta[1], 3)
+    circuit.cx(1, 3)
+    
+    # Add parameterized single-qubit rotations for fine-tuning
+    for i in range(num_qubits):
+        circuit.rz(phi[i], i)
+    
+    # Add one additional entangling layer with controlled-phase to improve expressibility
+    # while keeping transpiled cost low
+    for i in range(num_qubits - 1):
+        circuit.cx(i, i + 1)
+        circuit.rz(theta[0] * 0.5, i + 1)
+        circuit.cx(i, i + 1)
+    
+    # Final local rotation layer
+    psi = ParameterVector('psi', num_qubits)
+    for i in range(num_qubits):
+        circuit.ry(psi[i], i)
+    
+    # Combine all parameters
+    parameters = list(theta) + list(phi) + list(psi)
+    
+    return circuit, parameters
+```
+```
+
+Round 2 Qwen candidate
+Feedback:
+Correctness: pass. Reliability R: 0.868903. Hidden scores: E, T.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # HeH+ in STO-3G basis with 4 qubits
+    # Optimized ansatz balancing expressibility, trainability, and reliability
+    
+    circuit = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors with minimal but effective parameterization
+    # Use 6 parameters: 2 for excitations, 4 for local rotations
+    theta = ParameterVector('theta', 2)
+    phi = ParameterVector('phi', num_qubits)
+    
+    # Prepare Hartree-Fock state (for HeH+ STO-3G: electrons in orbitals 0 and 1)
+    # Map to qubits: occupied orbitals 0,1 -> qubits 0,1 get |1> states
+    circuit.x(0)
+    circuit.x(1)
+    
+    # Apply single excitation (0,2) - dominant excitation for HeH+
+    circuit.cx(0, 2)
+    circuit.ry(theta[0], 2)
+    circuit.cx(0, 2)
+    
+    # Apply single excitation (1,3) - secondary excitation
+    circuit.cx(1, 3)
+    circuit.ry(theta[1], 3)
+    circuit.cx(1, 3)
+    
+    # Add parameterized local rotations for fine-tuning
+    for i in range(num_qubits):
+        circuit.rz(phi[i], i)
+    
+    # Add one layer of entangling CZ gates (equivalent to CX in transpiled cost)
+    # Use CZ for better expressibility with similar transpilation cost
+    for i in range(num_qubits - 1):
+        circuit.cz(i, i + 1)
+    
+    # Add final rotation layer with fewer parameters to maintain trainability
+    psi = ParameterVector('psi', 2)  # Only 2 parameters for trainability
+    circuit.ry(psi[0], 0)
+    circuit.ry(psi[1], 2)
+    
+    # Combine all parameters
+    parameters = list(theta) + list(phi) + list(psi)
+    
+    return circuit, parameters
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

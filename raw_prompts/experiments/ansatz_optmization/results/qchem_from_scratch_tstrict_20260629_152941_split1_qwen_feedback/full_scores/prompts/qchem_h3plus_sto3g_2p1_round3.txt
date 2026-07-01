@@ -1,0 +1,300 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: H3+; basis: STO-3G; geometry/bondlength parameter: 2.1; qubits: 6.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -1.032110732463, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -1.032096532244.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H3+ in STO-3G basis with 6 qubits requires a specific ansatz
+    # Based on the benchmark, we implement a UCCSD-like ansatz with single and double excitations
+    # adapted for the H3+ system
+    
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=12)
+    
+    # Reference: H3+ linear geometry, STO-3G, 6 qubits
+    # UCCSD ansatz with single and double excitations for this system
+    
+    # Single excitations
+    # From Hartree-Fock state (occupied: 0,1,2; virtual: 3,4,5)
+    # Single excitation (0->3)
+    theta_idx = 0
+    # Implement single excitation using 4 CNOTs and 3 rotations
+    qc.ry(params[theta_idx], 0)
+    qc.ry(params[theta_idx], 3)
+    qc.rz(params[theta_idx + 1], 0)
+    qc.rz(params[theta_idx + 1], 3)
+    qc.cx(0, 3)
+    qc.rz(params[theta_idx + 2], 3)
+    qc.cx(0, 3)
+    qc.ry(-params[theta_idx], 0)
+    qc.ry(-params[theta_idx], 3)
+    qc.rz(-params[theta_idx + 1], 0)
+    qc.rz(-params[theta_idx + 1], 3)
+    theta_idx += 3
+    
+    # Single excitation (1->4)
+    qc.ry(params[theta_idx], 1)
+    qc.ry(params[theta_idx], 4)
+    qc.rz(params[theta_idx + 1], 1)
+    qc.rz(params[theta_idx + 1], 4)
+    qc.cx(1, 4)
+    qc.rz(params[theta_idx + 2], 4)
+    qc.cx(1, 4)
+    qc.ry(-params[theta_idx], 1)
+    qc.ry(-params[theta_idx], 4)
+    qc.rz(-params[theta_idx + 1], 1)
+    qc.rz(-params[theta_idx + 1], 4)
+    theta_idx += 3
+    
+    # Single excitation (2->5)
+    qc.ry(params[theta_idx], 2)
+    qc.ry(params[theta_idx], 5)
+    qc.rz(params[theta_idx + 1], 2)
+    qc.rz(params[theta_idx + 1], 5)
+    qc.cx(2, 5)
+    qc.rz(params[theta_idx + 2], 5)
+    qc.cx(2, 5)
+    qc.ry(-params[theta_idx], 2)
+    qc.ry(-params[theta_idx], 5)
+    qc.rz(-params[theta_idx + 1], 2)
+    qc.rz(-params[theta_idx + 1], 5)
+    theta_idx += 3
+    
+    # Double excitations
+    # Double excitation (0,1 -> 3,4)
+    qc.ry(params[theta_idx], 0)
+    qc.ry(params[theta_idx], 1)
+    qc.ry(params[theta_idx], 3)
+    qc.ry(params[theta_idx], 4)
+    qc.rz(params[theta_idx + 1], 0)
+    qc.rz(params[theta_idx + 1], 1)
+    qc.rz(params[theta_idx + 1], 3)
+    qc.rz(params[theta_idx + 1], 4)
+    
+    # Implement double excitation using 6 CNOTs and 3 rotations
+    qc.cx(0, 3)
+    qc.cx(1, 4)
+    qc.rz(params[theta_idx + 2], 3)
+    qc.rz(params[theta_idx + 2], 4)
+    qc.cx(0, 3)
+    qc.cx(1, 4)
+    qc.ry(-params[theta_idx], 0)
+    qc.ry(-params[theta_idx], 1)
+    qc.ry(-params[theta_idx], 3)
+    qc.ry(-params[theta_idx], 4)
+    qc.rz(-params[theta_idx + 1], 0)
+    qc.rz(-params[theta_idx + 1], 1)
+    qc.rz(-params[theta_idx + 1], 3)
+    qc.rz(-params[theta_idx + 1], 4)
+    theta_idx += 3
+    
+    # Double excitation (0,2 -> 3,5)
+    qc.ry(params[theta_idx], 0)
+    qc.ry(params[theta_idx], 2)
+    qc.ry(params[theta_idx], 3)
+    qc.ry(params[theta_idx], 5)
+    qc.rz(params[theta_idx + 1], 0)
+    qc.rz(params[theta_idx + 1], 2)
+    qc.rz(params[theta_idx + 1], 3)
+    qc.rz(params[theta_idx + 1], 5)
+    
+    qc.cx(0, 3)
+    qc.cx(2, 5)
+    qc.rz(params[theta_idx + 2], 3)
+    qc.rz(params[theta_idx + 2], 5)
+    qc.cx(0, 3)
+    qc.cx(2, 5)
+    qc.ry(-params[theta_idx], 0)
+    qc.ry(-params[theta_idx], 2)
+    qc.ry(-params[theta_idx], 3)
+    qc.ry(-params[theta_idx], 5)
+    qc.rz(-params[theta_idx + 1], 0)
+    qc.rz(-params[theta_idx + 1], 2)
+    qc.rz(-params[theta_idx + 1], 3)
+    qc.rz(-params[theta_idx + 1], 5)
+    theta_idx += 3
+    
+    # Double excitation (1,2 -> 4,5)
+    qc.ry(params[theta_idx], 1)
+    qc.ry(params[theta_idx], 2)
+    qc.ry(params[theta_idx], 4)
+    qc.ry(params[theta_idx], 5)
+    qc.rz(params[theta_idx + 1], 1)
+    qc.rz(params[theta_idx + 1], 2)
+    qc.rz(params[theta_idx + 1], 4)
+    qc.rz(params[theta_idx + 1], 5)
+    
+    qc.cx(1, 4)
+    qc.cx(2, 5)
+    qc.rz(params[theta_idx + 2], 4)
+    qc.rz(params[theta_idx + 2], 5)
+    qc.cx(1, 4)
+    qc.cx(2, 5)
+    qc.ry(-params
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: pass. Expressibility E: 0.015524. Trainability T: 0.569812. Reliability R: 0.774186. Total: 0.453174.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=12)
+    
+    # H3+ in STO-3G basis: 6 qubits, Hartree-Fock state |111000>
+    # Use a simplified UCCSD ansatz with single and double excitations
+    
+    # Single excitations: 3 pairs (0->3, 1->4, 2->5)
+    for i in range(3):
+        # Implement single excitation generator using 4 CNOTs
+        qc.ry(params[3*i], i)
+        qc.ry(params[3*i], i+3)
+        qc.rz(params[3*i+1], i)
+        qc.rz(params[3*i+1], i+3)
+        qc.cx(i, i+3)
+        qc.rz(params[3*i+2], i+3)
+        qc.cx(i, i+3)
+        qc.ry(-params[3*i], i)
+        qc.ry(-params[3*i], i+3)
+        qc.rz(-params[3*i+1], i)
+        qc.rz(-params[3*i+1], i+3)
+    
+    # Double excitations: 3 pairs (0,1->3,4), (0,2->3,5), (1,2->4,5)
+    # Use the standard double excitation gate implementation
+    # Double excitation (0,1 -> 3,4)
+    qc.cx(0, 3)
+    qc.cx(1, 4)
+    qc.rz(params[9], 3)
+    qc.rz(params[9], 4)
+    qc.cx(0, 3)
+    qc.cx(1, 4)
+    qc.rz(-params[9], 0)
+    qc.rz(-params[9], 1)
+    
+    # Double excitation (0,2 -> 3,5)
+    qc.cx(0, 3)
+    qc.cx(2, 5)
+    qc.rz(params[10], 3)
+    qc.rz(params[10], 5)
+    qc.cx(0, 3)
+    qc.cx(2, 5)
+    qc.rz(-params[10], 0)
+    qc.rz(-params[10], 2)
+    
+    # Double excitation (1,2 -> 4,5)
+    qc.cx(1, 4)
+    qc.cx(2, 5)
+    qc.rz(params[11], 4)
+    qc.rz(params[11], 5)
+    qc.cx(1, 4)
+    qc.cx(2, 5)
+    qc.rz(-params[11], 1)
+    qc.rz(-params[11], 2)
+    
+    return qc, params
+```
+```
+
+Round 2 Qwen candidate
+Feedback:
+Correctness: pass. Expressibility E: 0.014496. Trainability T: 0.550561. Reliability R: 0.769552. Total: 0.444870.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=12)
+    
+    # H3+ in STO-3G basis: 6 qubits, Hartree-Fock state |111000>
+    # Use a simplified UCCSD ansatz with single and double excitations
+    
+    # Single excitations: 3 pairs (0->3, 1->4, 2->5)
+    for i in range(3):
+        # Implement single excitation generator using 4 CNOTs
+        qc.ry(params[3*i], i)
+        qc.ry(params[3*i], i+3)
+        qc.rz(params[3*i+1], i)
+        qc.rz(params[3*i+1], i+3)
+        qc.cx(i, i+3)
+        qc.rz(params[3*i+2], i+3)
+        qc.cx(i, i+3)
+        qc.ry(-params[3*i], i)
+        qc.ry(-params[3*i], i+3)
+        qc.rz(-params[3*i+1], i)
+        qc.rz(-params[3*i+1], i+3)
+    
+    # Double excitations: 3 pairs (0,1->3,4), (0,2->3,5), (1,2->4,5)
+    # Use optimized double excitation implementation with fewer CNOTs
+    # Double excitation (0,1 -> 3,4)
+    qc.rz(params[9], 0)
+    qc.rz(params[9], 1)
+    qc.rz(params[9], 3)
+    qc.rz(params[9], 4)
+    qc.cx(0, 3)
+    qc.cx(1, 4)
+    qc.rz(-params[9], 3)
+    qc.rz(-params[9], 4)
+    qc.cx(0, 3)
+    qc.cx(1, 4)
+    
+    # Double excitation (0,2 -> 3,5)
+    qc.rz(params[10], 0)
+    qc.rz(params[10], 2)
+    qc.rz(params[10], 3)
+    qc.rz(params[10], 5)
+    qc.cx(0, 3)
+    qc.cx(2, 5)
+    qc.rz(-params[10], 3)
+    qc.rz(-params[10], 5)
+    qc.cx(0, 3)
+    qc.cx(2, 5)
+    
+    # Double excitation (1,2 -> 4,5)
+    qc.rz(params[11], 1)
+    qc.rz(params[11], 2)
+    qc.rz(params[11], 4)
+    qc.rz(params[11], 5)
+    qc.cx(1, 4)
+    qc.cx(2, 5)
+    qc.rz(-params[11], 4)
+    qc.rz(-params[11], 5)
+    qc.cx(1, 4)
+    qc.cx(2, 5)
+    
+    return qc, params
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

@@ -1,0 +1,153 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: LiH; basis: STO-3G; geometry/bondlength parameter: 0.9; qubits: 12.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -7.723425081420, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -7.722496403837.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # Create parameter vector for rotation angles
+    params = ParameterVector('θ', length=12)
+    
+    # Initialize quantum circuit
+    qc = QuantumCircuit(num_qubits)
+    
+    # Apply U3 gates with trainable parameters to each qubit
+    for i in range(num_qubits):
+        qc.u3(params[i], 0, 0, i)
+    
+    # Add entangling layers with CZ gates in a linear chain
+    for i in range(num_qubits - 1):
+        qc.cz(i, i + 1)
+    
+    # Add second layer of U3 gates with additional parameters
+    params2 = ParameterVector('φ', length=12)
+    for i in range(num_qubits):
+        qc.u3(params2[i], 0, 0, i)
+    
+    # Combine parameters into a single list
+    all_params = list(params) + list(params2)
+    
+    return qc, all_params
+```
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import Parameter
+
+def build_ansatz(num_qubits):
+    qc = QuantumCircuit(num_qubits)
+    
+    # Prepare Hartree-Fock state (for LiH STO-3G, HF state is |111100000000>)
+    # Fill orbitals 0-3 with electrons (spin-orbitals)
+    for i in range(4):
+        qc.x(i)
+    
+    # Create parameterized ansatz using ADAPT-style single and double excitations
+    # Limited depth to avoid excessive gate count while maintaining expressibility
+    
+    params = []
+    
+    # Single excitations: (i, j) where i is occupied, j is virtual
+    # For LiH STO-3G: occupied = [0,1,2,3], virtual = [4,5,6,7,8,9,10,11]
+    # Use a subset to keep gate count manageable
+    singles = [(0,4), (1,5), (2,6), (3,7), (0,8), (1,9), (2,10), (3,11)]
+    
+    # Double excitations: (i,j,k,l) where i,j occupied, k,l virtual
+    # Use a minimal set of physically motivated doubles
+    doubles = [(0,1,4,5), (2,3,6,7), (0,2,4,6), (1,3,5,7)]
+    
+    # Single excitation gates
+    for (i, j) in singles:
+        theta = Parameter(f'θ_{i}_{j}')
+        params.append(theta)
+        
+        # Implement single excitation using 4 CNOTs and rotations
+        if i < j:
+            qc.cx(i, j)
+            qc.ry(-theta/2, j)
+            qc.cx(i, j)
+        else:
+            qc.cx(j, i)
+            qc.ry(-theta/2, i)
+            qc.cx(j, i)
+    
+    # Double excitation gates (simplified implementation)
+    for (i, j, k, l) in doubles:
+        if i < j and k < l:
+            # Use standard double excitation circuit
+            phi = Parameter(f'φ_{i}_{j}_{k}_{l}')
+            params.append(phi)
+            
+            # First CNOT chain
+            qc.cx(i, k)
+            qc.cx(k, j)
+            qc.cx(j, l)
+            
+            # Rotation on target
+            qc.ry(-phi/8, l)
+            
+            # Reverse CNOT chain
+            qc.cx(j, l)
+            qc.cx(k, j)
+            qc.cx(i, k)
+            
+            # Second CNOT chain for the other part
+            qc.cx(i, l)
+            qc.cx(l, j)
+            qc.cx(j, k)
+            
+            qc.ry(phi/8, k)
+            
+            qc.cx(j, k)
+            qc.cx(l, j)
+            qc.cx(i, l)
+    
+    # Add additional single excitations with different connectivity
+    extra_singles = [(0,5), (1,4), (2,7), (3,6)]
+    for (i, j) in extra_singles:
+        theta = Parameter(f'θ2_{i}_{j}')
+        params.append(theta)
+        
+        if i < j:
+            qc.cx(i, j)
+            qc.ry(-theta/2, j)
+            qc.cx(i, j)
+        else:
+            qc.cx(j, i)
+            qc.ry(-theta/2, i)
+            qc.cx(j, i)
+    
+    return qc, params
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

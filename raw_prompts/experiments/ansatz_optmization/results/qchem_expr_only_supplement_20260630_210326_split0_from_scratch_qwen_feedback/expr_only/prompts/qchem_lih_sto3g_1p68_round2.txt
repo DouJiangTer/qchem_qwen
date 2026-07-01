@@ -1,0 +1,99 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: LiH; basis: STO-3G; geometry/bondlength parameter: 1.68; qubits: 12.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -7.880196676727, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -7.879229624463.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: pass. Expressibility E: 0.996495. Hidden scores: T, R.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # LiH STO-3G with 12 qubits requires a specific ansatz
+    # Using a hardware-efficient ansatz with Y rotations and CZ entanglers
+    # inspired by the molecular VQE structure
+    
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=3 * num_qubits)
+    
+    # Single-qubit rotations
+    for i in range(num_qubits):
+        qc.ry(params[3*i], i)
+        qc.rz(params[3*i + 1], i)
+    
+    # Entangling layers with nearest-neighbor CZ gates
+    for i in range(0, num_qubits - 1, 2):
+        qc.cz(i, i + 1)
+    
+    for i in range(1, num_qubits - 1, 2):
+        qc.cz(i, i + 1)
+    
+    # Second layer of rotations
+    for i in range(num_qubits):
+        qc.ry(params[3*i + 2], i)
+    
+    return qc, params
+```
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: pass. Expressibility E: 0.459096. Hidden scores: T, R.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # Optimized ansatz for LiH STO-3G with 12 qubits
+    # Improves expressibility while maintaining trainability and reliability
+    
+    qc = QuantumCircuit(num_qubits)
+    # Use 2 parameters per qubit for better expressibility with manageable depth
+    params = ParameterVector('θ', length=2 * num_qubits)
+    
+    # First layer: Y rotations for initial excitation
+    for i in range(num_qubits):
+        qc.ry(params[2*i], i)
+    
+    # Entangling layers with CZ gates in alternating pattern
+    for i in range(num_qubits - 1):
+        qc.cz(i, i + 1)
+    
+    # Second layer: Z rotations for additional flexibility
+    for i in range(num_qubits):
+        qc.rz(params[2*i + 1], i)
+    
+    # Third layer: Y rotations to enhance expressibility
+    for i in range(num_qubits):
+        qc.ry(params[2*i], i)
+    
+    # Final entangling layer for better correlation capture
+    for i in range(num_qubits - 1):
+        qc.cz(i, i + 1)
+    
+    return qc, params
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

@@ -1,0 +1,151 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: H3+; basis: 6-31G; geometry/bondlength parameter: 2.1; qubits: 12.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -1.094128046871, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -1.093250676390.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: pass. Expressibility E: 1.000000. Hidden scores: T, R.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H3+ in 6-31G basis with 12 qubits
+    # Using a hardware-efficient ansatz with Ry and Rz rotations and CNOT entanglers
+    # following the pattern from the benchmark VQE ansatz
+    
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=3 * num_qubits)
+    
+    # Initialize with Hartree-Fock state (for H3+, it's |111111000000⟩)
+    for i in range(6):
+        qc.x(i)
+    
+    # Add parameterized single-qubit rotations and two-qubit entanglers
+    for layer in range(2):
+        # Single-qubit rotations
+        for i in range(num_qubits):
+            qc.ry(params[layer * num_qubits + i], i)
+            qc.rz(params[2 * num_qubits + i], i)
+        
+        # Entangling layer with CNOTs in a linear chain
+        for i in range(num_qubits - 1):
+            qc.cx(i, i + 1)
+        
+        # Additional parameterized rotations after entangling
+        for i in range(num_qubits):
+            qc.ry(params[layer * num_qubits + i + num_qubits], i)
+    
+    return qc, params
+```
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H3+ in 6-31G basis with 12 qubits
+    # Optimized ansatz balancing expressibility, trainability, and reliability
+    
+    qc = QuantumCircuit(num_qubits)
+    # Use 3 layers with parameterized rotations and entangling gates
+    # Total parameters: 3 layers * (2 Ry + 2 Rz per qubit) = 144 parameters
+    # To improve trainability and reduce depth, use 2 layers with 1 Ry + 1 Rz per qubit
+    # Total parameters: 2 * 12 * 2 = 48 parameters
+    
+    params = ParameterVector('θ', length=2 * num_qubits)
+    
+    # Initialize with Hartree-Fock state (for H3+, it's |111111000000⟩)
+    for i in range(6):
+        qc.x(i)
+    
+    # Two-layer ansatz with alternating entangling patterns
+    for layer in range(2):
+        # Single-qubit rotations
+        for i in range(num_qubits):
+            qc.ry(params[layer * num_qubits + i], i)
+        
+        # Entangling layer with CNOTs in alternating pattern for better coverage
+        for i in range(0, num_qubits - 1, 2):
+            qc.cx(i, i + 1)
+        for i in range(1, num_qubits - 1, 2):
+            qc.cx(i, i + 1)
+        
+        # Second rotation layer
+        for i in range(num_qubits):
+            qc.rz(params[layer * num_qubits + i + num_qubits], i)
+    
+    return qc, params
+```
+```
+
+Round 2 Qwen candidate
+Feedback:
+Correctness: pass. Expressibility E: 1.000000. Hidden scores: T, R.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H3+ in 6-31G basis with 12 qubits
+    # Optimized ansatz balancing expressibility, trainability, and reliability
+    # Using 2 layers with Ry and Rz rotations and CNOT entanglers
+    
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=3 * num_qubits)
+    
+    # Initialize with Hartree-Fock state (for H3+, it's |111111000000⟩)
+    for i in range(6):
+        qc.x(i)
+    
+    # Two-layer ansatz with improved entangling pattern for better expressibility
+    for layer in range(2):
+        # Single-qubit rotations
+        for i in range(num_qubits):
+            qc.ry(params[layer * num_qubits + i], i)
+        
+        # Entangling layer with CNOTs in alternating pattern
+        for i in range(0, num_qubits - 1, 2):
+            qc.cx(i, i + 1)
+        for i in range(1, num_qubits - 1, 2):
+            qc.cx(i, i + 1)
+        
+        # Second rotation layer
+        for i in range(num_qubits):
+            qc.rz(params[layer * num_qubits + i + num_qubits], i)
+    
+    # Additional single-qubit rotation layer for improved expressibility
+    for i in range(num_qubits):
+        qc.ry(params[2 * num_qubits + i], i)
+    
+    return qc, params
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

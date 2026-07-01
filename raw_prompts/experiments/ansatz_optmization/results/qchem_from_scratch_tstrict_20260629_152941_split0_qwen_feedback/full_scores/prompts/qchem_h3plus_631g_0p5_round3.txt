@@ -1,0 +1,239 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: H3+; basis: 6-31G; geometry/bondlength parameter: 0.5; qubits: 12.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -1.004566303289, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -1.003621211033.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H3+ in 6-31G basis with 12 qubits
+    # Use a chemically motivated ansatz based on UCCSD-like structure
+    # but simplified for VQE with hardware efficiency
+    
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=24)
+    
+    # Initialize Hartree-Fock state (for H3+ with 2 electrons in 6-31G: 2 occupied orbitals)
+    # Occupied orbitals: 0, 1 (spin orbitals: 0,1,2,3 for alpha,beta pairs)
+    # Map to qubits via Jordan-Wigner transformation
+    qc.x(0)  # α spin orbital 0
+    qc.x(1)  # β spin orbital 0
+    qc.x(2)  # α spin orbital 1
+    qc.x(3)  # β spin orbital 1
+    
+    # Single and double excitation layers (simplified for 12 qubits)
+    # Single excitations: (i,a) where i occupied, a virtual
+    # Virtual orbitals: 4-11 (spin orbitals 4-11)
+    
+    # Add single excitations
+    for i in range(4):  # 4 spin orbitals occupied (0,1,2,3)
+        for a in range(4, num_qubits):  # 8 spin orbitals virtual (4-11)
+            if (i % 2 == 0 and a % 2 == 1) or (i % 2 == 1 and a % 2 == 0):
+                # Skip spin-forbidden transitions
+                continue
+            # Implement single excitation using double-qubit gates
+            if a < num_qubits:
+                # Controlled rotation between qubit i and a
+                qc.cry(params[2*(i*8 + a-4)], i, a)
+                qc.cry(params[2*(i*8 + a-4) + 1], a, i)
+    
+    # Add double excitations (simplified - only nearest neighbor pairs for efficiency)
+    # Double excitations: (i,j,a,b) where i,j occupied, a,b virtual
+    # Consider only spatial orbital pairs for simplicity
+    double_exc_count = 0
+    for i in range(0, 4, 2):  # α occupied orbitals
+        for j in range(1, 4, 2):  # β occupied orbitals
+            for a in range(4, num_qubits-1, 2):  # α virtual orbitals
+                for b in range(5, num_qubits, 2):  # β virtual orbitals
+                    if double_exc_count < 16:  # Limit number of parameters
+                        # Implement double excitation using 4-qubit gates
+                        # Approximate with 2-qubit gates for hardware efficiency
+                        qc.cry(params[8 + double_exc_count], i, a)
+                        qc.cry(params[8 + double_exc_count + 1], j, b)
+                        qc.cry(params[8 + double_exc_count + 2], a, i)
+                        qc.cry(params[8 + double_exc_count + 3], b, j)
+                        double_exc_count += 4
+    
+    return qc, params
+```
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: pass. Expressibility E: 0.596063. Trainability T: 0.921588. Reliability R: 0.425802. Total: 0.647818.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H3+ in 6-31G basis with 12 qubits
+    # Build a hardware-efficient ansatz that preserves chemical intuition
+    # while ensuring correctness and good expressibility/trainability
+    
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=24)
+    
+    # Initialize Hartree-Fock state for H3+ (2 electrons, so 2 occupied orbitals)
+    # In spin-orbital representation with 12 qubits: occupied orbitals 0,1 (spin-up, spin-down)
+    qc.x(0)
+    qc.x(1)
+    
+    # Add a single layer of single and double excitations using efficient gate sequences
+    # Use Ry and Rz for better control and trainability
+    
+    # Single excitations between adjacent spin-orbitals
+    # For H3+,主要 excitations are between occupied (0,1) and virtual orbitals
+    excitation_idx = 0
+    
+    # Single excitations: (0,2), (0,3), (1,2), (1,3), (0,4), (1,5) etc.
+    single_exc_pairs = [(0,2), (0,3), (1,2), (1,3), (0,4), (1,5)]
+    
+    for i, a in single_exc_pairs:
+        if excitation_idx >= 12:
+            break
+        # Implement single excitation using U3 decomposition
+        # Use controlled-Ry for better trainability
+        qc.cx(i, a)
+        qc.ry(params[excitation_idx], a)
+        qc.cx(i, a)
+        excitation_idx += 1
+    
+    # Double excitations using 4-qubit gate approximation with 2-qubit gates
+    # Use the standard 2-qubit decomposition for double excitations
+    double_exc_count = 0
+    # Consider double excitations between (0,1) and (2,3), (2,4), (3,5)
+    double_exc_pairs = [(0,1,2,3), (0,1,2,4), (0,1,3,5)]
+    
+    for i, j, a, b in double_exc_pairs:
+        if double_exc_count >= 6:
+            break
+        # Implement double excitation using 6 CNOTs (standard decomposition)
+        # First block
+        qc.cx(i, j)
+        qc.cx(j, a)
+        qc.ry(params[12 + double_exc_count], a)
+        qc.cx(j, a)
+        qc.cx(i, j)
+        
+        # Second block
+        qc.cx(i, b)
+        qc.cx(b, a)
+        qc.ry(params[12 + double_exc_count + 1], a)
+        qc.cx(b, a)
+        qc.cx(i, b)
+        
+        # Third block for correct phase
+        qc.cx(j, b)
+        qc.cx(b, a)
+        qc.ry(params[12 + double_exc_count + 2], a)
+        qc.cx(b, a)
+        qc.cx(j, b)
+        
+        double_exc_count += 3
+    
+    # Add a final layer of single qubit rotations for better expressibility
+    for i in range(num_qubits):
+        qc.rz(params[21 + i % 3], i)
+        qc.ry(params[18 + i % 3], i)
+    
+    return qc, params
+```
+```
+
+Round 2 Qwen candidate
+Feedback:
+Correctness: pass. Expressibility E: 0.996495. Trainability T: 0.931513. Reliability R: 0.106618. Total: 0.678209.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H3+ in 6-31G basis with 12 qubits
+    # Build a hardware-efficient ansatz optimized for expressibility, trainability, and reliability
+    
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=24)
+    
+    # Initialize Hartree-Fock state for H3+ (2 electrons → occupied spin orbitals 0, 1)
+    qc.x(0)
+    qc.x(1)
+    
+    # Single excitation layer using efficient controlled rotations
+    # Focus on chemically relevant transitions: occupied (0,1) to virtual (2-11)
+    single_exc_pairs = [(0,2), (0,3), (1,2), (1,3), (0,4), (1,5), (0,6), (1,7), (0,8), (1,9), (0,10), (1,11)]
+    
+    for idx, (i, a) in enumerate(single_exc_pairs[:12]):
+        # Use controlled-Ry with proper phase handling for trainability
+        qc.cx(i, a)
+        qc.ry(params[idx], a)
+        qc.cx(i, a)
+    
+    # Double excitation layer using optimized 2-qubit decomposition
+    # Focus on the most significant double excitations for H3+
+    double_exc_sets = [
+        (0,1,2,3),  # Same spatial orbital double excitation
+        (0,1,4,5),  # Next nearest neighbor
+        (0,1,6,7),  # Further virtual orbitals
+    ]
+    
+    for idx, (i, j, a, b) in enumerate(double_exc_sets):
+        # Standard double excitation decomposition with 6 CNOTs
+        # First block
+        qc.cx(i, j)
+        qc.cx(j, a)
+        qc.ry(params[12 + 3*idx], a)
+        qc.cx(j, a)
+        qc.cx(i, j)
+        
+        # Second block
+        qc.cx(i, b)
+        qc.cx(b, a)
+        qc.ry(params[12 + 3*idx + 1], a)
+        qc.cx(b, a)
+        qc.cx(i, b)
+        
+        # Third block for correct phase
+        qc.cx(j, b)
+        qc.cx(b, a)
+        qc.ry(params[12 + 3*idx + 2], a)
+        qc.cx(b, a)
+        qc.cx(j, b)
+    
+    # Final layer of parameterized rotations for expressibility
+    # Use Rz-Ry-Rz decomposition for full SU(2) coverage
+    for i in range(num_qubits):
+        qc.rz(params[21 + i % 3], i)
+        qc.ry(params[18 + i % 3], i)
+        qc.rz(params[15 + i % 3], i)
+    
+    return qc, params
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

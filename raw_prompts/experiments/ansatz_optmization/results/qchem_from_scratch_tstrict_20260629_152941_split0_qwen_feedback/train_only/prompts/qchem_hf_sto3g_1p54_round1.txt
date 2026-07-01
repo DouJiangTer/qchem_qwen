@@ -1,0 +1,140 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: HF; basis: STO-3G; geometry/bondlength parameter: 1.54; qubits: 12.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -98.512558732593, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -98.511984709835.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: pass. Trainability T: 1.000000. Hidden scores: E, R.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # HF molecule in STO-3G basis with 12 qubits requires a specific ansatz
+    # Based on the benchmark, we implement a UCCSD-like ansatz with single and double excitations
+    # For HF/STO-3G at 1.54 Bohr, the active space consists of 8 electrons in 8 orbitals
+    # This maps to 8 qubits for spin-orbitals, but with qubitization we get 12 qubits
+    
+    qc = QuantumCircuit(num_qubits)
+    params = ParameterVector('θ', length=20)
+    
+    # Prepare Hartree-Fock state (for HF in STO-3G: electrons occupy orbitals 0,1,2,3,4,5,6,7)
+    # In qubit representation, we need to set the first 8 qubits to |1> for the occupied orbitals
+    for i in range(8):
+        qc.x(i)
+    
+    # Add single and double excitations as parameterized gates
+    # Single excitations: (i, a) where i is occupied, a is virtual
+    # For this system: occupied = [0,1,2,3,4,5,6,7], virtual = [8,9,10,11]
+    # But with 12 qubits, we have more complex mapping
+    
+    # Implementing a standard ansatz for this specific benchmark:
+    # Based on the expected energy and system size, we use a modified UCCSD ansatz
+    
+    # First layer: single excitations
+    # (0,8), (1,9), (2,10), (3,11)
+    for i in range(4):
+        # Implement single excitation: swap + Rz + controlled rotations
+        # Using the standard implementation from quantum chemistry
+        target = 8 + i
+        source = i
+        
+        # Implement fermionic single excitation using qubit operations
+        # Using the implementation from OpenFermion/Qiskit-nature
+        qc.h(source)
+        qc.cx(source, target)
+        qc.rz(params[2*i], target)
+        qc.cx(source, target)
+        qc.h(source)
+        
+        # Second part of single excitation
+        qc.h(target)
+        qc.cx(target, source)
+        qc.rz(params[2*i+1], source)
+        qc.cx(target, source)
+        qc.h(target)
+    
+    # Second layer: double excitations
+    # (0,1,8,9), (2,3,10,11)
+    # Implement double excitation using qubit operations
+    # Using the implementation from quantum chemistry literature
+    
+    # Double excitation (0,1,8,9)
+    i, j, a, b = 0, 1, 8, 9
+    qc.h(i)
+    qc.h(j)
+    qc.h(a)
+    qc.h(b)
+    qc.cx(i, j)
+    qc.cx(a, b)
+    qc.cx(j, a)
+    qc.rz(params[8], a)
+    qc.cx(j, a)
+    qc.cx(a, b)
+    qc.cx(i, j)
+    qc.h(i)
+    qc.h(j)
+    qc.h(a)
+    qc.h(b)
+    
+    # Double excitation (2,3,10,11)
+    i, j, a, b = 2, 3, 10, 11
+    qc.h(i)
+    qc.h(j)
+    qc.h(a)
+    qc.h(b)
+    qc.cx(i, j)
+    qc.cx(a, b)
+    qc.cx(j, a)
+    qc.rz(params[9], a)
+    qc.cx(j, a)
+    qc.cx(a, b)
+    qc.cx(i, j)
+    qc.h(i)
+    qc.h(j)
+    qc.h(a)
+    qc.h(b)
+    
+    # Additional parameterized gates to match the benchmark ansatz
+    # Add more rotations to achieve the expected accuracy
+    for i in range(4):
+        qc.rz(params[10+i], i)
+        qc.rz(params[14+i], 8+i)
+    
+    # Final layer of controlled rotations for better convergence
+    qc.cx(0, 1)
+    qc.cx(2, 3)
+    qc.cx(8, 9)
+    qc.cx(10, 11)
+    
+    qc.rz(params[18], 1)
+    qc.rz(params[19], 9)
+    
+    qc.cx(0, 1)
+    qc.cx(2, 3)
+    qc.cx(8, 9)
+    qc.cx(10, 11)
+    
+    return qc, params
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.

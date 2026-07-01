@@ -1,0 +1,194 @@
+This is a benchmark-derived molecular VQE ansatz task from PennyLane qchem.
+
+Molecule: H4; basis: STO-3G; geometry/bondlength parameter: 0.5; qubits: 8.
+The benchmark provides a molecular Hamiltonian, exact FCI ground energy -1.653121347517, Hartree-Fock state, and a reference PennyLane VQE ansatz with energy -1.652163491386.
+
+Return only Python code defining build_ansatz(num_qubits), returning (QuantumCircuit, parameters). Use exactly the requested number of qubits, include trainable rotation parameters, do not add measurements, and preserve the molecular VQE objective rather than replacing it with an unrelated toy circuit.
+
+You are optimizing a previous correct-or-attempted ansatz over multiple rounds.
+
+Evaluator metric definitions:
+- Correctness is checked first: the circuit must use exactly the requested qubits, have no measurements/classical bits, keep parameter count and depth within task limits, use only allowed gates, and produce a finite Hamiltonian energy at zero parameters.
+- Expressibility E is an absolute score exp(-D_KL). The evaluator samples random parameter vectors uniformly from [-pi, pi], computes pairwise state fidelities, compares their histogram with the Haar fidelity distribution using KL divergence D_KL, and returns exp(-D_KL). Higher is better.
+- Trainability T is an absolute barren-plateau proxy from Hamiltonian-energy parameter-shift gradients. The evaluator samples random parameter vectors, computes energy gradients with +/- pi/2 shifts for up to 24 parameters, estimates gradient variance, then maps log10(variance) to a [0, 1] score. The default scoring range is log10(variance)=-4 -> 0 and log10(variance)=0 -> 1, configurable through ANSATZ_TRAIN_LOG_MIN/MAX. Higher means less vanishing-gradient behavior.
+- Reliability R is an absolute estimated success probability. The evaluator transpiles the circuit to basis gates [rz, sx, x, cx] on a line coupling map, counts one-qubit and two-qubit gates, then scores (1 - 1e-3)^one_qubit_gates * (1 - 1e-2)^two_qubit_gates. Higher means fewer/noisier-device-costly gates after transpilation.
+- Total is the simple mean (E + T + R) / 3 for correct circuits; incorrect circuits receive zero scores.
+
+
+Optimization history, including all previous Qwen answers available for this task:
+Round 0 initial Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    # H4 STO-3G with 8 qubits - use UCCSD-like ansatz with single and double excitations
+    qc = QuantumCircuit(num_qubits)
+    
+    # Create parameter vectors for single and double excitation parameters
+    # For H4 in STO-3G with 8 qubits, we have 4 occupied and 4 virtual orbitals
+    # Number of single excitations: 4*4 = 16
+    # Number of double excitations: C(4,2)*C(4,2) = 6*6 = 36
+    # But for efficiency and to match typical VQE implementations, we use a reduced set
+    
+    # Use a compact ansatz with 8 parameters (common for small molecules)
+    # Parameters for single and double excitations
+    params = ParameterVector('θ', length=8)
+    
+    # Apply single and double excitations using Qiskit's excitation gates
+    # For 8 qubits, we map orbitals to qubits using Jordan-Wigner encoding
+    # Occupied orbitals: 0,1,2,3; Virtual orbitals: 4,5,6,7
+    
+    # Single excitations: (0↔4), (1↔5), (2↔6), (3↔7)
+    # Double excitations: (0,1↔4,5), (2,3↔6,7), (0,2↔4,6), (1,3↔5,7)
+    
+    # First double excitation: 0,1 -> 4,5
+    qc.rxx(params[0], 0, 4)
+    qc.ryy(params[0], 0, 4)
+    qc.rxx(params[0], 1, 5)
+    qc.ryy(params[0], 1, 5)
+    
+    # Second double excitation: 2,3 -> 6,7
+    qc.rxx(params[1], 2, 6)
+    qc.ryy(params[1], 2, 6)
+    qc.rxx(params[1], 3, 7)
+    qc.ryy(params[1], 3, 7)
+    
+    # Single excitations
+    qc.ry(params[2], 0)
+    qc.rz(params[2], 4)
+    qc.ry(params[3], 1)
+    qc.rz(params[3], 5)
+    qc.ry(params[4], 2)
+    qc.rz(params[4], 6)
+    qc.ry(params[5], 3)
+    qc.rz(params[5], 7)
+    
+    # Additional double excitations for better accuracy
+    qc.rxx(params[6], 0, 2)
+    qc.ryy(params[6], 0, 2)
+    qc.rxx(params[6], 4, 6)
+    qc.ryy(params[6], 4, 6)
+    
+    qc.rxx(params[7], 1, 3)
+    qc.ryy(params[7], 1, 3)
+    qc.rxx(params[7], 5, 7)
+    qc.ryy(params[7], 5, 7)
+    
+    return qc, params
+```
+```
+
+Round 1 Qwen candidate
+Feedback:
+Correctness: fail. Fix the code so it passes the evaluator.
+Code:
+```python
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_ansatz(num_qubits):
+    qc = QuantumCircuit(num_qubits)
+    
+    # For H4 in STO-3G with 8 qubits, use a compact UCCSD-inspired ansatz
+    # Parameters: 8 total (4 single, 4 double excitation parameters)
+    params = ParameterVector('θ', length=8)
+    
+    # Prepare Hartree-Fock state: occupy orbitals 0,1,2,3 (spin-orbitals)
+    # Apply X gates to prepare initial state |11110000>
+    for i in range(4):
+        qc.x(i)
+    
+    # Single excitations: i -> a (occupied -> virtual)
+    # Map: 0->4, 1->5, 2->6, 3->7
+    for i in range(4):
+        a = i + 4
+        # Implement single excitation using 4 qubits: i, a and two ancillas
+        # Use the standard implementation with 6 CNOTs and rotations
+        # For efficiency, use a compact form with shared parameters
+        
+        # First part: prepare excitation between i and a
+        # Use controlled rotations via intermediate qubits
+        
+        # Simplified single excitation using 4 qubits (i, a, and two helpers)
+        # Using the standard implementation from quantum chemistry
+        # i=0, a=4; i=1, a=5; etc.
+        
+        # For each single excitation, use 6 CNOTs
+        # Helper qubits: use i+4 and i for the pair, but need additional structure
+        
+        # Instead, use a more compact approach with Ry and Rz rotations
+        # and CNOTs to implement the spin-orbital excitation
+        
+        # Single excitation gate implementation
+        # Using the standard pattern: CNOT(i, a), RY(params[i]), CNOT(i, a)
+        # But this only works for 2 qubits; for 8 qubits need proper embedding
+        
+        # Use the following approach: for each (i, a) pair, apply excitation
+        # with the rest of the system in the correct configuration
+        
+        # For H4, use the following simplified single excitations:
+        # Apply rotation on qubit i controlled by qubit a being |0>
+        # and vice versa, using the standard UCCSD implementation
+        
+        # Implement using the 4-qubit excitation circuit
+        # For pair (i, a), use intermediate qubits for control
+        
+        # Simplified version using Ry and CNOTs
+        # This is a standard implementation for single excitations
+        
+        # For single excitation (i, a):
+        qc.cx(i, a)
+        qc.ry(params[i], a)
+        qc.cx(i, a)
+        
+        # Additional phase correction using Rz on the reference qubits
+        # to maintain proper spin structure
+    
+    # Double excitations: (i, j) -> (a, b)
+    # For H4, include the main double excitations:
+    # (0,1) -> (4,5), (2,3) -> (6,7), (0,2) -> (4,6), (1,3) -> (5,7)
+    
+    # Double excitation implementation using 8 CNOTs per pair
+    # Using the standard implementation from quantum chemistry
+    
+    # First double excitation: 0,1 -> 4,5
+    qc.cx(0, 4)
+    qc.cx(1, 5)
+    qc.rzz(params[4], 4, 5)
+    qc.cx(0, 4)
+    qc.cx(1, 5)
+    
+    # Second double excitation: 2,3 -> 6,7
+    qc.cx(2, 6)
+    qc.cx(3, 7)
+    qc.rzz(params[5], 6, 7)
+    qc.cx(2, 6)
+    qc.cx(3, 7)
+    
+    # Third double excitation: 0,2 -> 4,6
+    qc.cx(0, 4)
+    qc.cx(2, 6)
+    qc.rzz(params[6], 4, 6)
+    qc.cx(0, 4)
+    qc.cx(2, 6)
+    
+    # Fourth double excitation: 1,3 -> 5,7
+    qc.cx(1, 5)
+    qc.cx(3, 7)
+    qc.rzz(params[7], 5, 7)
+    qc.cx(1, 5)
+    qc.cx(3, 7)
+    
+    return qc, params
+```
+```
+
+Return an improved implementation of build_ansatz(num_qubits). Keep the output contract unchanged.
+Use the metric definitions above to reason about tradeoffs: preserve correctness first, then try to improve the visible score dimensions without needlessly damaging hidden dimensions.
+Do not include markdown or explanation.
