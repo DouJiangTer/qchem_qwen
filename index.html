@@ -11,6 +11,19 @@
   <main>
     <h1>QChem Ansatz Experiment Viewer</h1>
     <p class="muted">Click a task to inspect prompt, Qwen outputs, scores, and rendered circuit diagrams. Reference-start uses the benchmark/reference circuit as round 0. From-scratch starts from task prompt only.</p>
+    <nav class="navlinks">
+      <a href="README.html">Experiment README</a>
+      <a href="README.md">GitHub README</a>
+      <a href="assets/reference_start_metric_trends.png">Reference-start metric chart</a>
+      <a href="assets/from_scratch_metric_trends.png">From-scratch metric chart</a>
+    </nav>
+    <section>
+      <h2>Overall Metric Trends</h2>
+      <div class="chart-grid">
+        <a href="assets/reference_start_metric_trends.png"><img class="chart" src="assets/reference_start_metric_trends.png" alt="reference-start metric trends"></a>
+        <a href="assets/from_scratch_metric_trends.png"><img class="chart" src="assets/from_scratch_metric_trends.png" alt="from-scratch metric trends"></a>
+      </div>
+    </section>
     <table>
       <thead><tr><th>Task</th><th>Mol</th><th>Basis</th><th>Bondlength</th><th>Qubits</th><th>Reference total</th><th>Scratch initial total</th><th>Scratch initial</th></tr></thead>
       <tbody>

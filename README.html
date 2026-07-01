@@ -1,0 +1,114 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Experiment README</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="index.html">Back to index</a>
+    <span>Experiment README</span>
+  </header>
+  <main>
+    <h1>Experiment README</h1>
+    <section class="readme-section">
+      <h2>Goal</h2>
+      <p>This viewer compares two LLM ansatz-generation settings on the same 60 stratified PennyLane/qchem tasks. Each task is a molecular VQE-style ansatz task with a benchmark Hamiltonian, FCI energy, Hartree-Fock state, and benchmark VQE information.</p>
+      <p>The experiment asks whether Qwen can produce or improve Qiskit parameterized ansatz circuits under correctness constraints and E/T/R scoring.</p>
+    </section>
+    <section class="readme-section">
+      <h2>Task Set</h2>
+      <p>The task set contains 60 qchem tasks stratified by molecule, basis, qubit count, and bond length. The run is capped at 12 qubits for statevector-based scoring cost.</p>
+      <p>Each task prompt asks Qwen to return Python code defining <code>build_ansatz(num_qubits)</code>, returning <code>(QuantumCircuit, parameters)</code>. The circuit must use the requested number of qubits, include trainable rotations, avoid measurements, and preserve the molecular VQE objective.</p>
+    </section>
+    <section class="readme-section">
+      <h2>Prompt Construction</h2>
+      <h3>Reference-start</h3>
+      <p>Round 0 is the benchmark/reference ansatz candidate. The feedback prompt includes:</p>
+      <ul>
+        <li>the task prompt;</li>
+        <li>the metric definitions for correctness, E, T, R, and Total;</li>
+        <li>the full round-0 reference Qiskit code;</li>
+        <li>the visible score feedback for the active regime.</li>
+      </ul>
+      <p>Round 2 and later append all previous Qwen candidates for that task, including their visible feedback and code.</p>
+      <h3>From-scratch</h3>
+      <p>The initial generation prompt contains only the task prompt. No reference circuit is shown. Feedback rounds then optimize the Qwen-generated round-0 candidate, again appending all previous Qwen candidates for that task.</p>
+      <h3>Feedback regimes</h3>
+      <ul>
+        <li><code>train_only</code>: shows correctness and T only.</li>
+        <li><code>reliability_only</code>: shows correctness and R only.</li>
+        <li><code>full_scores</code>: shows correctness, E, T, R, and Total.</li>
+      </ul>
+    </section>
+    <section class="readme-section">
+      <h2>Correctness</h2>
+      <p>E/T/R are computed only after correctness passes. A circuit is correct if it:</p>
+      <ul>
+        <li>uses exactly the task qubit count;</li>
+        <li>has no classical bits and no measurements;</li>
+        <li>has parameter count within task limits;</li>
+        <li>does not exceed task max depth;</li>
+        <li>uses only allowed gates;</li>
+        <li>has finite Hamiltonian energy at the all-zero parameter vector.</li>
+      </ul>
+      <pre class="formula">If correctness fails: E = 0, T = 0, R = 0, Total = 0</pre>
+    </section>
+    <section class="readme-section">
+      <h2>Expressibility E</h2>
+      <p>The implementation samples <code>N_E = 102</code> random parameter vectors uniformly from <code>[-pi, pi]^p</code>. It computes all pairwise state fidelities:</p>
+      <pre class="formula">F_ij = |&lt;psi(theta_i)|psi(theta_j)&gt;|^2</pre>
+      <p>For 102 samples this gives 5151 fidelities. The fidelities are histogrammed into 50 uniform bins over [0, 1]. The Haar bin mass for dimension <code>d = 2^n</code> and bin <code>[a,b]</code> is:</p>
+      <pre class="formula">P_Haar([a,b]) = (1 - a)^(d - 1) - (1 - b)^(d - 1)</pre>
+      <p>Both empirical and Haar histograms use <code>+1e-12</code> smoothing and normalization. The score is:</p>
+      <pre class="formula">D_KL = sum_b P_emp(b) log(P_emp(b) / P_Haar(b))
+E = exp(-D_KL)</pre>
+    </section>
+    <section class="readme-section">
+      <h2>Trainability T</h2>
+      <p>T is a Hamiltonian-energy gradient-variance barren-plateau proxy. For energy:</p>
+      <pre class="formula">L(theta) = &lt;psi(theta)|H|psi(theta)&gt;</pre>
+      <p>The evaluator samples random parameter vectors and checks up to 24 parameters. For parameter index m it uses parameter-shift gradients:</p>
+      <pre class="formula">g_{k,m} = 0.5 * (L(theta_k + (pi/2)e_m) - L(theta_k - (pi/2)e_m))</pre>
+      <p>Then:</p>
+      <pre class="formula">gradient_variance = Var({g_{k,m}})
+logv = log10(gradient_variance + 1e-16)</pre>
+      <p>This run uses strict mapping:</p>
+      <pre class="formula">ANSATZ_TRAIN_LOG_MIN = -4
+ANSATZ_TRAIN_LOG_MAX = 0
+T = clip((logv - (-4)) / (0 - (-4)), 0, 1)
+  = clip((log10(gradient_variance + 1e-16) + 4) / 4, 0, 1)</pre>
+    </section>
+    <section class="readme-section">
+      <h2>Reliability R</h2>
+      <p>The circuit is transpiled to:</p>
+      <pre class="formula">basis_gates = ["rz", "sx", "x", "cx"]
+coupling_map = line coupling
+optimization_level = 1</pre>
+      <p>Gate counts are taken from the transpiled circuit if transpilation succeeds. One-qubit gates counted are <code>rz, sx, x, z, h, s, sdg, rx, ry, u, u3</code>. Two-qubit gates counted are <code>cx, cz</code>.</p>
+      <pre class="formula">p1 = 1e-3
+p2 = 1e-2
+G1 = one_qubit_gate_count
+G2 = two_qubit_gate_count
+R = (1 - p1)^G1 * (1 - p2)^G2
+  = 0.999^G1 * 0.99^G2</pre>
+    </section>
+    <section class="readme-section">
+      <h2>Total</h2>
+      <pre class="formula">Total = (E + T + R) / 3</pre>
+      <p>For incorrect candidates, Total is zero.</p>
+    </section>
+    <section class="readme-section">
+      <h2>Aggregate Line Charts</h2>
+      <p>The line charts show mean metrics over the 60 tasks. Round 0 is the benchmark reference in reference-start and the Qwen task-only initial candidate in from-scratch. Rounds 1-3 are feedback optimization rounds.</p>
+      <div class="chart-grid">
+        <a href="assets/reference_start_metric_trends.png"><img class="chart" src="assets/reference_start_metric_trends.png" alt="reference-start metric trends"></a>
+        <a href="assets/from_scratch_metric_trends.png"><img class="chart" src="assets/from_scratch_metric_trends.png" alt="from-scratch metric trends"></a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

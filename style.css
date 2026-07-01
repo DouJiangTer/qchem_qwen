@@ -10,6 +10,8 @@ a { color: #165dba; text-decoration: none; }
 a:hover { text-decoration: underline; }
 .topbar { position: sticky; top: 0; z-index: 10; height: 48px; display: flex; gap: 18px; align-items: center; padding: 0 20px; background: #fff; border-bottom: 1px solid var(--border); }
 .muted { color: var(--muted); }
+.navlinks { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
+.navlinks a { display: inline-flex; align-items: center; min-height: 34px; padding: 6px 11px; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
 table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--border); }
 th, td { padding: 9px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; font-size: 14px; }
 th { background: #eef3f8; font-weight: 650; }
@@ -27,4 +29,8 @@ th { background: #eef3f8; font-weight: 650; }
 .score.incorrect .pill { background: var(--bad); }
 .errors, .render-error { margin-top: 10px; padding: 10px; border-radius: 6px; background: #fff1f0; color: var(--bad); border: 1px solid #ffccc7; font-size: 13px; }
 .circuit { display: block; max-width: 100%; margin: 12px 0; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+.chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.chart { display: block; width: 100%; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+.readme-section { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 16px 18px; margin: 16px 0; }
+.formula { background: #f8fafc; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; overflow: auto; }
 .setting { margin-bottom: 28px; }
